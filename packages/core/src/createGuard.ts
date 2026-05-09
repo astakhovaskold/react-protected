@@ -1,6 +1,15 @@
 import type { Guard, GuardOptions, RouteConfig, AccessResult } from './types'
 
-// TODO: реализация
+function buildLoginRedirect(
+  loginPath: string,
+  callbackUrlParam: string,
+  currentPath: string
+): string {
+  const url = new URL(loginPath, 'https://react-protected.local')
+  url.searchParams.set(callbackUrlParam, currentPath)
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
 export function createGuard<TUser = unknown>(
   options: GuardOptions<TUser>
 ): Guard<TUser> {
@@ -22,15 +31,23 @@ export function createGuard<TUser = unknown>(
     const user          = resolved.getUser()
     const authenticated = resolved.isAuthenticated(user)
     const access        = route.access ?? 'public'
+    const requiresAuth =
+      access === 'authenticated' ||
+      Boolean(route.roles?.length) ||
+      Boolean(route.permissions?.length)
 
     // guest-only: редиректим залогиненных
     if (access === 'guest-only' && authenticated) {
       return { allowed: false, reason: 'guest-only', redirectTo: resolved.defaultPath }
     }
 
-    // authenticated: редиректим незалогиненных
-    if (access === 'authenticated' && !authenticated) {
-      const redirectTo = `${resolved.loginPath}?${resolved.callbackUrlParam}=${currentPath}`
+    // authenticated / RBAC / ABAC: редиректим незалогиненных
+    if (requiresAuth && !authenticated) {
+      const redirectTo = buildLoginRedirect(
+        resolved.loginPath,
+        resolved.callbackUrlParam,
+        currentPath
+      )
       return { allowed: false, reason: 'unauthenticated', redirectTo }
     }
 
