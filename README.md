@@ -9,7 +9,7 @@ RBAC, ABAC, callbackUrl — без копипасты в каждом проек
 | Package | Description |
 |---|---|
 | `@react-protected/core` | Чистая логика, без React и без роутера |
-| `@react-protected/react-router` | Адаптер для React Router v6 |
+| `@react-protected/react-router` | Адаптер для React Router data routers (`RouterProvider`) |
 
 ## Install
 

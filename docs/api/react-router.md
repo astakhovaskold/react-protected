@@ -1,6 +1,6 @@
 # @react-protected/react-router
 
-Адаптер для React Router v6.
+Адаптер для React Router data routers (`RouterProvider`, `createBrowserRouter`).
 
 ## createGuardedRouter(routes, options)
 
@@ -43,18 +43,14 @@ const routes = [
 
 ### options
 
-Все опции из `createGuard` плюс:
-
-| Поле | Тип | Описание |
-|---|---|---|
-| `loadingElement` | `React.ReactNode` | Показывается пока проверяется доступ |
+Все опции из `createGuard`.
 
 ## callbackUrl
 
 При редиректе незалогиненного пользователя с защищённого маршрута — `callbackUrl` пишется автоматически:
 
 ```
-/dashboard → /login?callbackUrl=/dashboard
+/dashboard → /login?callbackUrl=%2Fdashboard
 ```
 
 После логина — редирект обратно на `/dashboard`. Логику редиректа после логина нужно реализовать самостоятельно:

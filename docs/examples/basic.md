@@ -23,7 +23,7 @@ export const router = createGuardedRouter(
     {
       path: '/dashboard',
       element: <DashboardPage />,
-      access: 'authenticated', // незалогиненных редиректит на /login?callbackUrl=/dashboard
+      access: 'authenticated', // незалогиненных редиректит на /login?callbackUrl=%2Fdashboard
     },
     { path: '/403', element: <Page403 /> },
     { path: '*',   element: <Page404 /> },
