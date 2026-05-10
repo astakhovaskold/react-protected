@@ -6,10 +6,10 @@ RBAC, ABAC, callbackUrl — без копипасты в каждом проек
 
 ## Packages
 
-| Package | Description |
-|---|---|
-| `@react-protected/core` | Чистая логика, без React и без роутера |
-| `@react-protected/react-router` | Адаптер для React Router data routers (`RouterProvider`) |
+| Package                         | Description                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| `@react-protected/core`         | Чистая логика, без React и без роутера                                             |
+| `@react-protected/react-router` | Адаптер для React Router data routers и JSX-guards (`GuardProvider`, `GuardRoute`) |
 
 ## Install
 
@@ -43,6 +43,34 @@ const router = createGuardedRouter(
 const App = () => <RouterProvider router={router} />
 ```
 
+Если роутер уже собран через обычный `<Routes>`, можно использовать JSX API:
+
+```tsx
+import { Route, Routes } from 'react-router-dom'
+import { GuardProvider, GuardRoute } from '@react-protected/react-router'
+
+const App = () => (
+  <GuardProvider
+    getUser={() => useAuthStore.getState().user}
+    hasRole={(user, roles) => roles.some((role) => user.roles.includes(role))}
+    loginPath="/login"
+    forbiddenPath="/403"
+  >
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <GuardRoute access="authenticated">
+            <DashboardPage />
+          </GuardRoute>
+        }
+      />
+    </Routes>
+  </GuardProvider>
+)
+```
+
 ## Motivation
 
 В каждом React-проекте с авторизацией одно и то же:
@@ -54,7 +82,7 @@ const ProtectedRoute = ({ roles, children }) => {
   const location = useLocation()
 
   if (!user) return <Navigate to={`/login?callbackUrl=${location.pathname}`} />
-  if (roles && !roles.some(r => user.roles.includes(r))) return <Navigate to="/403" />
+  if (roles && !roles.some((r) => user.roles.includes(r))) return <Navigate to="/403" />
   return children
 }
 ```

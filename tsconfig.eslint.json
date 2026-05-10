@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "packages/*/tests/**/*.ts",
+    "packages/*/tests/**/*.tsx",
+    "packages/*/vite.config.ts"
+  ],
+  "exclude": ["**/dist/**", "node_modules"]
+}
