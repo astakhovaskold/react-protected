@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
 import { createGuard } from '../src/createGuard'
 
 describe('createGuard', () => {
   type User = {
-    roles: string[]
-    permissions?: string[]
+    roles: Array<string>
+    permissions?: Array<string>
   }
 
   const makeGuard = (user: User | null) =>
@@ -26,7 +27,10 @@ describe('createGuard', () => {
 
   it('redirects unauthenticated user from protected route', () => {
     const guard = makeGuard(null)
-    const result = guard.check({ path: '/dashboard', access: 'authenticated' }, '/dashboard')
+    const result = guard.check(
+      { path: '/dashboard', access: 'authenticated' },
+      '/dashboard'
+    )
     expect(result.allowed).toBe(false)
     if (!result.allowed) {
       expect(result.reason).toBe('unauthenticated')
@@ -47,13 +51,19 @@ describe('createGuard', () => {
 
   it('allows user with correct role', () => {
     const guard = makeGuard({ roles: ['admin'] })
-    const result = guard.check({ path: '/admin', access: 'authenticated', roles: ['admin'] }, '/admin')
+    const result = guard.check(
+      { path: '/admin', access: 'authenticated', roles: ['admin'] },
+      '/admin'
+    )
     expect(result.allowed).toBe(true)
   })
 
   it('forbids user without required role', () => {
     const guard = makeGuard({ roles: ['viewer'] })
-    const result = guard.check({ path: '/admin', access: 'authenticated', roles: ['admin'] }, '/admin')
+    const result = guard.check(
+      { path: '/admin', access: 'authenticated', roles: ['admin'] },
+      '/admin'
+    )
     expect(result.allowed).toBe(false)
     if (!result.allowed) {
       expect(result.reason).toBe('forbidden')
@@ -73,7 +83,11 @@ describe('createGuard', () => {
   it('forbids user without required permissions', () => {
     const guard = makeGuard({ roles: ['manager'], permissions: ['contracts:read'] })
     const result = guard.check(
-      { path: '/contracts/new', access: 'authenticated', permissions: ['contracts:write'] },
+      {
+        path: '/contracts/new',
+        access: 'authenticated',
+        permissions: ['contracts:write'],
+      },
       '/contracts/new'
     )
     expect(result.allowed).toBe(false)

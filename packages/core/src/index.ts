@@ -1,8 +1,2 @@
 export { createGuard } from './createGuard'
-export type {
-  Guard,
-  GuardOptions,
-  RouteConfig,
-  RouteAccess,
-  AccessResult,
-} from './types'
+export type { AccessResult, Guard, GuardOptions, RouteAccess, RouteConfig } from './types'

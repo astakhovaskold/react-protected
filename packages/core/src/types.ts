@@ -2,11 +2,11 @@
 export type RouteAccess = 'public' | 'authenticated' | 'guest-only'
 
 // Конфиг одного маршрута
-export type RouteConfig<TUser = unknown> = {
+export type RouteConfig = {
   path: string
-  access?: RouteAccess          // по умолчанию 'public'
-  roles?: string[]              // RBAC: список допустимых ролей
-  permissions?: string[]        // ABAC: список допустимых прав
+  access?: RouteAccess // по умолчанию 'public'
+  roles?: Array<string> // RBAC: список допустимых ролей
+  permissions?: Array<string> // ABAC: список допустимых прав
   meta?: Record<string, unknown> // произвольные данные для кастомной логики
 }
 
@@ -14,8 +14,8 @@ export type RouteConfig<TUser = unknown> = {
 export type AccessResult =
   | { allowed: true }
   | { allowed: false; reason: 'unauthenticated'; redirectTo: string }
-  | { allowed: false; reason: 'forbidden';       redirectTo: string }
-  | { allowed: false; reason: 'guest-only';      redirectTo: string }
+  | { allowed: false; reason: 'forbidden'; redirectTo: string }
+  | { allowed: false; reason: 'guest-only'; redirectTo: string }
 
 // Опции для createGuard
 export type GuardOptions<TUser = unknown> = {
@@ -26,10 +26,10 @@ export type GuardOptions<TUser = unknown> = {
   isAuthenticated?: (user: TUser | null) => boolean
 
   // Проверка ролей
-  hasRole?: (user: TUser, roles: string[]) => boolean
+  hasRole?: (user: TUser, roles: Array<string>) => boolean
 
   // Проверка прав (ABAC)
-  hasPermission?: (user: TUser, permissions: string[]) => boolean
+  hasPermission?: (user: TUser, permissions: Array<string>) => boolean
 
   // Куда редиректить если не залогинен (default: '/login')
   loginPath?: string
@@ -46,6 +46,6 @@ export type GuardOptions<TUser = unknown> = {
 
 // Публичный интерфейс guard-а
 export type Guard<TUser = unknown> = {
-  check: (route: RouteConfig<TUser>, currentPath: string) => AccessResult
+  check: (route: RouteConfig, currentPath: string) => AccessResult
   options: Required<GuardOptions<TUser>>
 }

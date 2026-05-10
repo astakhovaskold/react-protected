@@ -1,4 +1,4 @@
-import type { Guard, GuardOptions, RouteConfig, AccessResult } from './types'
+import type { AccessResult, Guard, GuardOptions, RouteConfig } from './types'
 
 function buildLoginRedirect(
   loginPath: string,
@@ -10,27 +10,22 @@ function buildLoginRedirect(
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-export function createGuard<TUser = unknown>(
-  options: GuardOptions<TUser>
-): Guard<TUser> {
+export function createGuard<TUser = unknown>(options: GuardOptions<TUser>): Guard<TUser> {
   const resolved = {
-    getUser:          options.getUser,
-    isAuthenticated:  options.isAuthenticated  ?? ((user) => user !== null),
-    hasRole:          options.hasRole          ?? (() => false),
-    hasPermission:    options.hasPermission    ?? (() => false),
-    loginPath:        options.loginPath        ?? '/login',
-    forbiddenPath:    options.forbiddenPath    ?? '/403',
-    defaultPath:      options.defaultPath      ?? '/',
+    getUser: options.getUser,
+    isAuthenticated: options.isAuthenticated ?? ((user) => user !== null),
+    hasRole: options.hasRole ?? (() => false),
+    hasPermission: options.hasPermission ?? (() => false),
+    loginPath: options.loginPath ?? '/login',
+    forbiddenPath: options.forbiddenPath ?? '/403',
+    defaultPath: options.defaultPath ?? '/',
     callbackUrlParam: options.callbackUrlParam ?? 'callbackUrl',
   } as Required<GuardOptions<TUser>>
 
-  const check = (
-    route: RouteConfig<TUser>,
-    currentPath: string
-  ): AccessResult => {
-    const user          = resolved.getUser()
+  const check = (route: RouteConfig, currentPath: string): AccessResult => {
+    const user = resolved.getUser()
     const authenticated = resolved.isAuthenticated(user)
-    const access        = route.access ?? 'public'
+    const access = route.access ?? 'public'
     const requiresAuth =
       access === 'authenticated' ||
       Boolean(route.roles?.length) ||
