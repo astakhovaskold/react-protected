@@ -45,6 +45,42 @@ import { router } from './router'
 export const App = () => <RouterProvider router={router} />
 ```
 
+Альтернатива для обычного JSX-роутинга без `createGuardedRouter`:
+
+```tsx
+import { Route, Routes } from 'react-router-dom'
+import { GuardProvider, GuardRoute } from '@react-protected/react-router'
+
+export const App = () => (
+  <GuardProvider
+    getUser={() => useAuthStore.getState().user}
+    loginPath="/login"
+    forbiddenPath="/403"
+    defaultPath="/dashboard"
+  >
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route
+        path="/login"
+        element={
+          <GuardRoute access="guest-only">
+            <LoginPage />
+          </GuardRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <GuardRoute access="authenticated">
+            <DashboardPage />
+          </GuardRoute>
+        }
+      />
+    </Routes>
+  </GuardProvider>
+)
+```
+
 ```tsx
 // pages/LoginPage.tsx — обработка callbackUrl после логина
 import { useNavigate, useSearchParams } from 'react-router-dom'

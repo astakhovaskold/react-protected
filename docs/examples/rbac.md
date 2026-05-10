@@ -47,9 +47,9 @@ export const router = createGuardedRouter(
 
 ```ts
 const HIERARCHY: Record<string, string[]> = {
-  admin:   ['admin', 'manager', 'viewer'],
+  admin: ['admin', 'manager', 'viewer'],
   manager: ['manager', 'viewer'],
-  viewer:  ['viewer'],
+  viewer: ['viewer'],
 }
 
 hasRole: (user, roles) =>

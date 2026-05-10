@@ -10,7 +10,7 @@ import { createRouter, createRoute } from '@tanstack/react-router'
 
 const guard = createGuard({
   getUser: () => useAuthStore.getState().user,
-  hasRole: (user, roles) => roles.some(r => user.roles.includes(r)),
+  hasRole: (user, roles) => roles.some((r) => user.roles.includes(r)),
 })
 
 const dashboardRoute = createRoute({

@@ -11,22 +11,22 @@ import { createGuard } from '@react-protected/core'
 
 const guard = createGuard({
   getUser: () => store.getState().user,
-  hasRole: (user, roles) => roles.some(r => user.roles.includes(r)),
+  hasRole: (user, roles) => roles.some((r) => user.roles.includes(r)),
 })
 ```
 
 ### Options
 
-| Поле | Тип | Default | Описание |
-|---|---|---|---|
-| `getUser` | `() => TUser \| null` | — | **Required.** Возвращает текущего пользователя |
-| `isAuthenticated` | `(user) => boolean` | `user !== null` | Считать ли пользователя залогиненным |
-| `hasRole` | `(user, roles) => boolean` | `() => false` | Проверка ролей (RBAC) |
-| `hasPermission` | `(user, permissions) => boolean` | `() => false` | Проверка прав (ABAC) |
-| `loginPath` | `string` | `'/login'` | Куда редиректить незалогиненных |
-| `forbiddenPath` | `string` | `'/403'` | Куда редиректить при нехватке прав |
-| `defaultPath` | `string` | `'/'` | Куда редиректить залогиненных с `guest-only` |
-| `callbackUrlParam` | `string` | `'callbackUrl'` | Имя query-параметра для возврата после логина |
+| Поле               | Тип                              | Default         | Описание                                       |
+| ------------------ | -------------------------------- | --------------- | ---------------------------------------------- |
+| `getUser`          | `() => TUser \| null`            | —               | **Required.** Возвращает текущего пользователя |
+| `isAuthenticated`  | `(user) => boolean`              | `user !== null` | Считать ли пользователя залогиненным           |
+| `hasRole`          | `(user, roles) => boolean`       | `() => false`   | Проверка ролей (RBAC)                          |
+| `hasPermission`    | `(user, permissions) => boolean` | `() => false`   | Проверка прав (ABAC)                           |
+| `loginPath`        | `string`                         | `'/login'`      | Куда редиректить незалогиненных                |
+| `forbiddenPath`    | `string`                         | `'/403'`        | Куда редиректить при нехватке прав             |
+| `defaultPath`      | `string`                         | `'/'`           | Куда редиректить залогиненных с `guest-only`   |
+| `callbackUrlParam` | `string`                         | `'callbackUrl'` | Имя query-параметра для возврата после логина  |
 
 ## guard.check(route, currentPath)
 
@@ -52,7 +52,7 @@ if (result.allowed) {
 ```ts
 type RouteConfig = {
   path: string
-  access?: 'public' | 'authenticated' | 'guest-only'  // default: 'public'
+  access?: 'public' | 'authenticated' | 'guest-only' // default: 'public'
   roles?: string[]
   permissions?: string[]
   meta?: Record<string, unknown>
@@ -65,5 +65,6 @@ type RouteConfig = {
 type AccessResult =
   | { allowed: true }
   | { allowed: false; reason: 'unauthenticated'; redirectTo: string }
-  | { allowed: false; reason: 'forbidden';       redirectTo: string }
-  | { allowed: false; reason: 'guest-only';      redirectTo: string }
+  | { allowed: false; reason: 'forbidden'; redirectTo: string }
+  | { allowed: false; reason: 'guest-only'; redirectTo: string }
+```
