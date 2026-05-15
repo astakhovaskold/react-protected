@@ -71,7 +71,7 @@ function GuardedElement<TUser>({
 }: GuardedElementProps<TUser>) {
   const location = useLocation()
   const currentPath = `${location.pathname}${location.search}${location.hash}`
-  const result = guard.check({ path: location.pathname, access, roles, permissions, meta })
+  const result = guard.check({ access, roles, permissions, meta })
 
   if (!result.allowed) {
     const redirectTo = buildRedirect(
@@ -114,7 +114,7 @@ function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
   return ((args: TArgs) => {
     const url = new URL(args.request.url)
     const currentPath = `${url.pathname}${url.search}`
-    const result = ctx.guard.check({ path: url.pathname, ...ctx.protection })
+    const result = ctx.guard.check(ctx.protection)
 
     if (!result.allowed) {
       const redirectTo = buildRedirect(

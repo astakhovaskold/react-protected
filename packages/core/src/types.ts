@@ -1,7 +1,6 @@
 export type RouteAccess = 'public' | 'authenticated' | 'guest-only'
 
 export type RouteConfig = {
-  path?: string
   access?: RouteAccess
   roles?: Array<string>
   permissions?: Array<string>
