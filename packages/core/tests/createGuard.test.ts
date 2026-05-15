@@ -29,14 +29,6 @@ describe('createGuard', () => {
     })
   })
 
-  it('returns guest-only for authenticated user on guest-only route', () => {
-    const guard = makeGuard({ roles: ['viewer'] })
-    expect(guard.check({ access: 'guest-only' })).toEqual({
-      allowed: false,
-      reason: 'guest-only',
-    })
-  })
-
   it('allows user with correct role', () => {
     const guard = makeGuard({ roles: ['admin'] })
     expect(guard.check({ access: 'authenticated', roles: ['admin'] })).toEqual({

@@ -1,6 +1,5 @@
 import type { Guard } from '@react-protected/core'
 import { createGuard } from '@react-protected/core'
-import type { RouteProtection } from '@react-protected/react'
 import type { ComponentType, ReactNode } from 'react'
 import {
   createBrowserRouter,
@@ -15,11 +14,12 @@ import type {
   CreateAccessRouterConfig,
   CreateAccessRouterOptions,
   ProtectedRouteObject,
+  RouterRouteConfig,
 } from './types'
 
 type RouterGuardContext<TUser> = {
   guard: Guard<TUser>
-  protection: RouteProtection
+  protection: RouterRouteConfig
   hasStaticUi: boolean
   loginPath: string
   forbiddenPath: string
@@ -27,7 +27,7 @@ type RouterGuardContext<TUser> = {
   callbackUrlParam?: string
 }
 
-type GuardedElementProps<TUser> = RouteProtection & {
+type GuardedElementProps<TUser> = RouterRouteConfig & {
   guard: Guard<TUser>
   routeElement?: ReactNode
   RouteComponent?: ComponentType | null
@@ -71,6 +71,16 @@ function GuardedElement<TUser>({
 }: GuardedElementProps<TUser>) {
   const location = useLocation()
   const currentPath = `${location.pathname}${location.search}${location.hash}`
+
+  if (access === 'guest-only') {
+    const user = guard.options.getUser()
+    const isAuth = guard.options.isAuthenticated(user)
+    if (isAuth) return <Navigate to={defaultPath} replace />
+    if (RouteComponent) return <RouteComponent />
+    if (routeElement !== undefined && routeElement !== null) return routeElement
+    return <Outlet />
+  }
+
   const result = guard.check({ access, roles, permissions, meta })
 
   if (!result.allowed) {
@@ -114,6 +124,14 @@ function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
   return ((args: TArgs) => {
     const url = new URL(args.request.url)
     const currentPath = `${url.pathname}${url.search}`
+
+    if (ctx.protection.access === 'guest-only') {
+      const user = ctx.guard.options.getUser()
+      const isAuth = ctx.guard.options.isAuthenticated(user)
+      if (isAuth) return redirect(ctx.defaultPath) as TResult
+      return handler(args)
+    }
+
     const result = ctx.guard.check(ctx.protection)
 
     if (!result.allowed) {

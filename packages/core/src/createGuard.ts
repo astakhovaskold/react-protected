@@ -1,4 +1,4 @@
-import type { AccessResult, Guard, GuardOptions, RouteConfig } from './types'
+import type { AccessConfig, AccessResult, Guard, GuardOptions } from './types'
 
 export function createGuard<TUser = unknown>(options: GuardOptions<TUser>): Guard<TUser> {
   const resolved = {
@@ -8,31 +8,27 @@ export function createGuard<TUser = unknown>(options: GuardOptions<TUser>): Guar
     hasPermission: options.hasPermission ?? (() => false),
   } as Required<GuardOptions<TUser>>
 
-  const check = (route: RouteConfig): AccessResult => {
+  const check = (config: AccessConfig): AccessResult => {
     const user = resolved.getUser()
     const authenticated = resolved.isAuthenticated(user)
-    const access = route.access ?? 'public'
+    const access = config.access ?? 'public'
     const requiresAuth =
       access === 'authenticated' ||
-      Boolean(route.roles?.length) ||
-      Boolean(route.permissions?.length)
-
-    if (access === 'guest-only' && authenticated) {
-      return { allowed: false, reason: 'guest-only' }
-    }
+      Boolean(config.roles?.length) ||
+      Boolean(config.permissions?.length)
 
     if (requiresAuth && !authenticated) {
       return { allowed: false, reason: 'unauthenticated' }
     }
 
-    if (route.roles?.length && user) {
-      if (!resolved.hasRole(user, route.roles)) {
+    if (config.roles?.length && user) {
+      if (!resolved.hasRole(user, config.roles)) {
         return { allowed: false, reason: 'forbidden' }
       }
     }
 
-    if (route.permissions?.length && user) {
-      if (!resolved.hasPermission(user, route.permissions)) {
+    if (config.permissions?.length && user) {
+      if (!resolved.hasPermission(user, config.permissions)) {
         return { allowed: false, reason: 'forbidden' }
       }
     }
