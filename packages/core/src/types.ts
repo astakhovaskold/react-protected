@@ -1,7 +1,7 @@
-export type RouteAccess = 'public' | 'authenticated' | 'guest-only'
+export type AccessLevel = 'public' | 'authenticated'
 
-export type RouteConfig = {
-  access?: RouteAccess
+export type AccessConfig = {
+  access?: AccessLevel
   roles?: Array<string>
   permissions?: Array<string>
   meta?: Record<string, unknown>
@@ -11,7 +11,6 @@ export type AccessResult =
   | { allowed: true }
   | { allowed: false; reason: 'unauthenticated' }
   | { allowed: false; reason: 'forbidden' }
-  | { allowed: false; reason: 'guest-only' }
 
 export type GuardOptions<TUser = unknown> = {
   getUser: () => TUser | null
@@ -21,6 +20,6 @@ export type GuardOptions<TUser = unknown> = {
 }
 
 export type Guard<TUser = unknown> = {
-  check: (route: RouteConfig) => AccessResult
+  check: (config: AccessConfig) => AccessResult
   options: Required<GuardOptions<TUser>>
 }

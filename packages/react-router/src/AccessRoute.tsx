@@ -1,8 +1,10 @@
 import { useAccess } from '@react-protected/react'
 import type { AccessResult } from '@react-protected/core'
-import type { AccessRouteProps, RouteProtection } from '@react-protected/react'
+import type { RouteProtection } from '@react-protected/react'
 import { memo } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+
+import type { AccessRouteProps } from './types'
 
 export function useRouteAccess(config: RouteProtection): AccessResult {
   const { guard } = useAccess()
@@ -16,9 +18,17 @@ export const AccessRoute = memo(function AccessRoute({
   meta,
   children,
 }: AccessRouteProps) {
-  const result = useRouteAccess({ access, roles, permissions, meta })
-  const { loginPath, forbiddenPath, defaultPath, callbackUrlParam } = useAccess()
+  const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam } = useAccess()
   const location = useLocation()
+
+  if (access === 'guest-only') {
+    const user = guard.options.getUser()
+    const isAuth = guard.options.isAuthenticated(user)
+    if (isAuth) return <Navigate to={defaultPath} replace />
+    return <>{children ?? <Outlet />}</>
+  }
+
+  const result = guard.check({ access, roles, permissions, meta })
 
   if (!result.allowed) {
     if (result.reason === 'unauthenticated') {
@@ -29,12 +39,8 @@ export const AccessRoute = memo(function AccessRoute({
       return <Navigate to={redirectTo} replace />
     }
 
-    if (result.reason === 'forbidden') {
-      return <Navigate to={forbiddenPath} replace />
-    }
-
-    return <Navigate to={defaultPath} replace />
+    return <Navigate to={forbiddenPath} replace />
   }
 
-  return children ?? <Outlet />
+  return <>{children ?? <Outlet />}</>
 })
