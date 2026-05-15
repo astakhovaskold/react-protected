@@ -1,5 +1,5 @@
 export { AccessProvider, useAccess } from './AccessProvider'
-export { HasAccess, useHasAccess, useRouteAccess } from './HasAccess'
+export { HasAccess, useHasAccess } from './HasAccess'
 export type {
   AccessContextValue,
   AccessProviderProps,

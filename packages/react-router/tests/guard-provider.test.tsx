@@ -5,7 +5,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { AccessProvider } from '@react-protected/react'
-import { AccessRoute } from '../src/AccessRoute'
+import { AccessRoute, useRouteAccess } from '../src/AccessRoute'
+import { renderHook } from '@testing-library/react'
 
 describe('AccessRoute', () => {
   afterEach(cleanup)
@@ -198,5 +199,23 @@ describe('AccessRoute', () => {
       </MemoryRouter>
     )
     expect(screen.getByTestId('login-path').textContent).toBe('/signin')
+  })
+})
+
+describe('useRouteAccess', () => {
+  afterEach(cleanup)
+
+  it('returns full AccessResult from guard.check()', () => {
+    const { result } = renderHook(
+      () => useRouteAccess({ access: 'authenticated' }),
+      {
+        wrapper: ({ children }) => (
+          <MemoryRouter>
+            <AccessProvider getUser={() => null}>{children}</AccessProvider>
+          </MemoryRouter>
+        ),
+      }
+    )
+    expect(result.current).toEqual({ allowed: false, reason: 'unauthenticated' })
   })
 })

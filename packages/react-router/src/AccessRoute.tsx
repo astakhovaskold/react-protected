@@ -1,7 +1,13 @@
-import { useAccess, useRouteAccess } from '@react-protected/react'
-import type { AccessRouteProps } from '@react-protected/react'
+import { useAccess } from '@react-protected/react'
+import type { AccessResult } from '@react-protected/core'
+import type { AccessRouteProps, RouteProtection } from '@react-protected/react'
 import { memo } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+
+export function useRouteAccess(config: RouteProtection): AccessResult {
+  const { guard } = useAccess()
+  return guard.check(config)
+}
 
 export const AccessRoute = memo(function AccessRoute({
   access,
