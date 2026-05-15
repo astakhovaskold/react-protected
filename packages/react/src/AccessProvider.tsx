@@ -1,5 +1,5 @@
 import { createGuard } from '@react-protected/core'
-import { createContext, type ReactNode, useContext } from 'react'
+import { createContext, type ReactNode, useContext, useMemo } from 'react'
 
 import type { AccessContextValue, AccessProviderProps } from './types'
 
@@ -11,17 +11,26 @@ export function AccessProvider<TUser = unknown>({
   forbiddenPath = '/403',
   defaultPath = '/',
   callbackUrlParam,
-  ...guardOptions
+  getUser,
+  isAuthenticated,
+  hasRole,
+  hasPermission,
 }: AccessProviderProps<TUser>) {
-  const guard = createGuard(guardOptions)
+  const guard = useMemo(
+    () => createGuard({ getUser, isAuthenticated, hasRole, hasPermission }),
+    [getUser, isAuthenticated, hasRole, hasPermission]
+  )
 
-  const value: AccessContextValue = {
-    guard: guard as AccessContextValue['guard'],
-    loginPath,
-    forbiddenPath,
-    defaultPath,
-    callbackUrlParam,
-  }
+  const value = useMemo<AccessContextValue>(
+    () => ({
+      guard: guard as AccessContextValue['guard'],
+      loginPath,
+      forbiddenPath,
+      defaultPath,
+      callbackUrlParam,
+    }),
+    [guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam]
+  )
 
   return (
     <AccessContext.Provider value={value}>

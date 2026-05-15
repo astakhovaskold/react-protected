@@ -1,12 +1,7 @@
-import type { Guard, GuardOptions, RouteAccess } from '@react-protected/core'
+import type { Guard, GuardOptions, RouteConfig } from '@react-protected/core'
 import type { ReactNode } from 'react'
 
-export type RouteProtection = {
-  access?: RouteAccess
-  roles?: Array<string>
-  permissions?: Array<string>
-  meta?: Record<string, unknown>
-}
+export type { RouteConfig as RouteProtection } from '@react-protected/core'
 
 export type NavigationConfig = {
   loginPath?: string
@@ -28,6 +23,6 @@ export type AccessProviderProps<TUser = unknown> = GuardOptions<TUser> &
     children?: ReactNode
   }
 
-export type AccessRouteProps = RouteProtection & {
+export type AccessRouteProps = RouteConfig & {
   children?: ReactNode
 }
