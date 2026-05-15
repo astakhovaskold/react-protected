@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  RBAC, ABAC and <code>callbackUrl</code> without re-implementing guards in every project.
+  RBAC, ABAC, guest-only routes and <code>callbackUrl</code> without re-implementing guards in every project.
 </p>
 
 <p align="center">
@@ -30,92 +30,126 @@
 
 ## Features
 
-- Framework-agnostic core for access checks and redirects
-- React Router adapter for data routers and JSX guards
-- Support for `guest-only`, `authenticated`, RBAC and ABAC scenarios
-- Built-in `callbackUrl` flow for returning users after login
-- Monorepo with TypeScript, Vitest and package-level builds
+- Framework-agnostic core for pure access-control logic (no React, no router)
+- Intermediate React package with context, hooks, and UI guard component
+- React Router adapter for data routers (`createAccessRouter`) and JSX guards (`AccessRoute`)
+- RBAC via `hasRole`, ABAC via `hasPermission`, `guest-only` routes at the adapter level
+- Optional `callbackUrl` flow for returning users after login
 
 ## Packages
 
-| Package                         | Description                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| `@react-protected/core`         | Pure access-control logic without React or router bindings                           |
-| `@react-protected/react-router` | Adapter for React Router data routers and JSX guards (`GuardProvider`, `GuardRoute`) |
+| Package                          | Description                                                              |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| `@react-protected/core`          | Pure access-control logic — no React, no router, no redirects            |
+| `@react-protected/react`         | React context (`AccessProvider`), hooks, and `HasAccess` component       |
+| `@react-protected/react-router`  | Adapter for React Router: `createAccessRouter` and `AccessRoute`         |
 
 ## Roadmap
 
-- Add a `TanStack Router` adapter later
-- Add a `Wouter` adapter later
+- Add a TanStack Router adapter
+- Add a Wouter adapter
 
 ## Installation
 
+For React Router projects, install the adapter (it includes `@react-protected/react`):
+
 ```bash
-npm install @react-protected/core @react-protected/react-router
+npm install @react-protected/react-router
 ```
 
 ```bash
-yarn add @react-protected/core @react-protected/react-router
+yarn add @react-protected/react-router
 ```
 
 ```bash
-pnpm add @react-protected/core @react-protected/react-router
+pnpm add @react-protected/react-router
 ```
 
+For React projects without React Router:
+
 ```bash
-bun add @react-protected/core @react-protected/react-router
+npm install @react-protected/react
 ```
 
 ## Quick Start
 
+### Data router (recommended)
+
 ```tsx
-import { RouterProvider } from 'react-router-dom'
-import { createGuardedRouter } from '@react-protected/react-router'
+// router.ts
+import { createAccessRouter } from '@react-protected/react-router'
 import { useAuthStore } from './entities/auth'
 
-const router = createGuardedRouter(
+export const router = createAccessRouter(
   [
     { path: '/', element: <HomePage /> },
     { path: '/login', element: <LoginPage />, access: 'guest-only' },
     { path: '/dashboard', element: <DashboardPage />, access: 'authenticated' },
     { path: '/admin', element: <AdminPage />, access: 'authenticated', roles: ['admin'] },
+    { path: '/403', element: <Page403 /> },
   ],
   {
     getUser: () => useAuthStore.getState().user,
     hasRole: (user, roles) => roles.some((role) => user.roles.includes(role)),
     loginPath: '/login',
     forbiddenPath: '/403',
+    defaultPath: '/dashboard',
   }
 )
 
-const App = () => <RouterProvider router={router} />
+// App.tsx
+import { RouterProvider } from 'react-router-dom'
+export const App = () => <RouterProvider router={router} />
 ```
 
-If your routes are already built with `<Routes>`, use the JSX API:
+### JSX routes
 
 ```tsx
 import { Route, Routes } from 'react-router-dom'
-import { GuardProvider, GuardRoute } from '@react-protected/react-router'
+import { AccessProvider, AccessRoute } from '@react-protected/react-router'
 
 const App = () => (
-  <GuardProvider
+  <AccessProvider
     getUser={() => useAuthStore.getState().user}
     hasRole={(user, roles) => roles.some((role) => user.roles.includes(role))}
     loginPath="/login"
     forbiddenPath="/403"
+    defaultPath="/dashboard"
   >
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route
+        path="/login"
+        element={
+          <AccessRoute access="guest-only">
+            <LoginPage />
+          </AccessRoute>
+        }
+      />
+      <Route
         path="/dashboard"
         element={
-          <GuardRoute access="authenticated">
+          <AccessRoute access="authenticated">
             <DashboardPage />
-          </GuardRoute>
+          </AccessRoute>
         }
       />
     </Routes>
-  </GuardProvider>
+  </AccessProvider>
+)
+```
+
+### Guarding UI elements
+
+```tsx
+import { HasAccess } from '@react-protected/react'
+
+const Toolbar = () => (
+  <nav>
+    <HasAccess roles={['admin']}>
+      <button>Delete</button>
+    </HasAccess>
+  </nav>
 )
 ```
 

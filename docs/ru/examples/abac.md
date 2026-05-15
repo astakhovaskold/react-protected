@@ -11,7 +11,9 @@ type User = {
 ```
 
 ```ts
-export const router = createGuardedRouter(
+import { createAccessRouter } from '@react-protected/react-router'
+
+export const router = createAccessRouter(
   [
     {
       path: '/contracts',
@@ -34,8 +36,11 @@ export const router = createGuardedRouter(
   ],
   {
     getUser: () => useAuthStore.getState().user,
+
+    // AND-семантика: пользователь должен иметь каждое право из списка
     hasPermission: (user: User, permissions) =>
       permissions.every((p) => user.permissions.includes(p)),
+
     forbiddenPath: '/403',
   }
 )
@@ -51,5 +56,26 @@ export const router = createGuardedRouter(
   access: 'authenticated',
   roles: ['admin'],                  // должен быть admin
   permissions: ['billing:manage'],   // И иметь право billing:manage
+}
+```
+
+## Защита UI-элементов через права
+
+```tsx
+import { HasAccess, useHasAccess } from '@react-protected/react-router'
+
+// Компонентная форма
+const ContractActions = () => (
+  <div>
+    <HasAccess permissions={['contracts:write']}>
+      <button>Редактировать контракт</button>
+    </HasAccess>
+  </div>
+)
+
+// Хуковая форма
+const ExportButton = () => {
+  const canExport = useHasAccess({ permissions: ['reports:export'] })
+  return canExport ? <button>Экспорт</button> : null
 }
 ```

@@ -1,38 +1,36 @@
 # Basic — авторизация и гость
 
-Минимальный пример: публичные страницы, страница логина только для гостей, дашборд только для авторизованных.
+Публичная главная, страница логина только для гостей, дашборд только для авторизованных.
+
+## Data router
 
 ```ts
 // router.ts
-import { createGuardedRouter } from '@react-protected/react-router'
+import { createAccessRouter } from '@react-protected/react-router'
 import { useAuthStore } from './entities/auth'
-import { LoginPage, DashboardPage, HomePage, Page403, Page404 } from './pages'
+import { LoginPage, DashboardPage, HomePage, Page403 } from './pages'
 
-export const router = createGuardedRouter(
+export const router = createAccessRouter(
   [
-    {
-      path: '/',
-      element: <HomePage />,
-      // access не указан → 'public' по умолчанию
-    },
+    { path: '/', element: <HomePage /> },
     {
       path: '/login',
       element: <LoginPage />,
-      access: 'guest-only',   // залогиненных редиректит на defaultPath
+      access: 'guest-only', // залогиненных редиректит на defaultPath
     },
     {
       path: '/dashboard',
       element: <DashboardPage />,
-      access: 'authenticated', // незалогиненных редиректит на /login?callbackUrl=%2Fdashboard
+      access: 'authenticated', // незалогиненных → /login?next=%2Fdashboard
     },
     { path: '/403', element: <Page403 /> },
-    { path: '*',   element: <Page404 /> },
   ],
   {
     getUser: () => useAuthStore.getState().user,
     loginPath: '/login',
     forbiddenPath: '/403',
     defaultPath: '/dashboard',
+    callbackUrlParam: 'next',
   }
 )
 ```
@@ -45,44 +43,47 @@ import { router } from './router'
 export const App = () => <RouterProvider router={router} />
 ```
 
-Альтернатива для обычного JSX-роутинга без `createGuardedRouter`:
+## JSX-роутинг
 
 ```tsx
 import { Route, Routes } from 'react-router-dom'
-import { GuardProvider, GuardRoute } from '@react-protected/react-router'
+import { AccessProvider, AccessRoute } from '@react-protected/react-router'
 
 export const App = () => (
-  <GuardProvider
+  <AccessProvider
     getUser={() => useAuthStore.getState().user}
     loginPath="/login"
     forbiddenPath="/403"
     defaultPath="/dashboard"
+    callbackUrlParam="next"
   >
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route
         path="/login"
         element={
-          <GuardRoute access="guest-only">
+          <AccessRoute access="guest-only">
             <LoginPage />
-          </GuardRoute>
+          </AccessRoute>
         }
       />
       <Route
         path="/dashboard"
         element={
-          <GuardRoute access="authenticated">
+          <AccessRoute access="authenticated">
             <DashboardPage />
-          </GuardRoute>
+          </AccessRoute>
         }
       />
     </Routes>
-  </GuardProvider>
+  </AccessProvider>
 )
 ```
 
+## Обработка callbackUrl после логина
+
 ```tsx
-// pages/LoginPage.tsx — обработка callbackUrl после логина
+// pages/LoginPage.tsx
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from './entities/auth'
 
@@ -94,8 +95,7 @@ export const LoginPage = () => {
   const handleLogin = async (email: string, password: string) => {
     const { user, token } = await AuthAPI.login(email, password)
     setAuth(user, token)
-    // callbackUrl подхватывается автоматически
-    navigate(params.get('callbackUrl') ?? '/dashboard', { replace: true })
+    navigate(params.get('next') ?? '/dashboard', { replace: true })
   }
 
   // ...
