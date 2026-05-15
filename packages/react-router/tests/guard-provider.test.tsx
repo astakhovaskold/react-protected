@@ -43,9 +43,7 @@ describe('AccessProvider', () => {
     )
 
     expect(guard).toBeDefined()
-    expect(guard?.check({ path: '/admin', roles: ['admin'] }, '/admin')).toEqual({
-      allowed: true,
-    })
+    expect(guard?.check({ path: '/admin', roles: ['admin'] })).toEqual({ allowed: true })
   })
 
   it('updates route redirects when provider props change', () => {
@@ -134,18 +132,29 @@ describe('AccessRoute', () => {
     expect(screen.getByText('dashboard')).toBeTruthy()
   })
 
-  it('redirects unauthenticated users to login with callbackUrl', () => {
+  it('renders Outlet when no children are provided', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <AccessProvider getUser={() => ({ id: 'user-1' })}>
+          <Routes>
+            <Route path="/dashboard" element={<AccessRoute access="authenticated" />}>
+              <Route index element={<div>outlet content</div>} />
+            </Route>
+          </Routes>
+        </AccessProvider>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('outlet content')).toBeTruthy()
+  })
+
+  it('redirects unauthenticated users to loginPath', () => {
     function LoginPage() {
-      const location = useLocation()
-      return (
-        <div data-testid="callback-url">
-          {new URLSearchParams(location.search).get('callbackUrl')}
-        </div>
-      )
+      return <div data-testid="login-page">login</div>
     }
 
     render(
-      <MemoryRouter initialEntries={['/private?tab=overview#section']}>
+      <MemoryRouter initialEntries={['/private']}>
         <AccessProvider getUser={() => null}>
           <Routes>
             <Route
@@ -162,9 +171,7 @@ describe('AccessRoute', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByTestId('callback-url').textContent).toBe(
-      '/private?tab=overview#section'
-    )
+    expect(screen.getByTestId('login-page')).toBeTruthy()
   })
 
   it('redirects authenticated users away from guest-only routes', () => {
@@ -193,7 +200,7 @@ describe('AccessRoute', () => {
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <AccessProvider
-          getUser={() => ({ role: 'member', permissions: ['reports:read'] })}
+          getUser={() => ({ role: 'member' })}
           hasRole={(user, roles) => roles.includes(user.role)}
         >
           <Routes>

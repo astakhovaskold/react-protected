@@ -211,7 +211,7 @@ describe('createGuardedRouter', () => {
     }
 
     expect(result.status).toBe(302)
-    expect(result.headers.get('Location')).toBe('/login?callbackUrl=%2Fprivate')
+    expect(result.headers.get('Location')).toBe('/login')
   })
 
   it('preserves static UI precedence over function-form lazy UI', async () => {

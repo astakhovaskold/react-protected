@@ -1,5 +1,5 @@
+import type { AccessResult } from '@react-protected/core'
 import type { ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
 
 import { useAccess } from './AccessProvider'
 import type { RouteProtection } from './types'
@@ -8,15 +8,14 @@ type HasAccessProps = RouteProtection & {
   children?: ReactNode
 }
 
-export function useHasAccess({ access, roles, permissions, meta }: RouteProtection): boolean {
+export function useHasAccess(config: RouteProtection): boolean {
   const guard = useAccess()
-  const location = useLocation()
-  const currentPath = `${location.pathname}${location.search}${location.hash}`
-  const result = guard.check(
-    { path: location.pathname, access, roles, permissions, meta },
-    currentPath
-  )
-  return result.allowed
+  return guard.check(config).allowed
+}
+
+export function useRouteAccess(config: RouteProtection): AccessResult {
+  const guard = useAccess()
+  return guard.check(config)
 }
 
 export function HasAccess({ access, roles, permissions, meta, children }: HasAccessProps) {

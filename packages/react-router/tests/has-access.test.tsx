@@ -7,17 +7,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { AccessProvider } from '../src/AccessProvider'
 import { HasAccess, useHasAccess } from '../src/HasAccess'
 
-function Wrapper({
-  user,
-  path = '/',
-  children,
-}: {
-  user: unknown
-  path?: string
-  children: React.ReactNode
-}) {
+function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
   return (
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter>
       <AccessProvider
         getUser={() => user}
         hasRole={(u: { roles: string[] }, roles) => roles.some((r) => u.roles.includes(r))}
@@ -70,7 +62,7 @@ describe('useHasAccess', () => {
     expect(result.current).toBe(false)
   })
 
-  it('returns true when user has required permissions', () => {
+  it('returns true when user has all required permissions', () => {
     const { result } = renderHook(
       () => useHasAccess({ permissions: ['reports:read'] }),
       {
