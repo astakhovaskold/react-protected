@@ -169,9 +169,9 @@ describe('createGuardedRouter', () => {
       }
     })
 
-    const { createGuardedRouter } = await import('../src/createGuardedRouter')
+    const { createAccessRouter } = await import('../src/createAccessRouter')
 
-    createGuardedRouter(
+    createAccessRouter(
       [
         {
           path: '/private',

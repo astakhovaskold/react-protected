@@ -5,41 +5,41 @@ import { renderToString } from 'react-dom/server'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { GuardProvider, useGuard } from '../src/GuardProvider'
-import { GuardRoute } from '../src/GuardRoute'
-import type { GuardContextValue } from '../src/types'
+import { AccessProvider, useAccess } from '../src/AccessProvider'
+import { AccessRoute } from '../src/AccessRoute'
+import type { AccessContextValue } from '../src/types'
 
-describe('GuardProvider', () => {
+describe('AccessProvider', () => {
   afterEach(() => {
     cleanup()
   })
 
-  it('throws when useGuard is called outside the provider', () => {
+  it('throws when useAccess is called outside the provider', () => {
     function Consumer() {
-      useGuard()
+      useAccess()
       return null
     }
 
     expect(() => renderToString(<Consumer />)).toThrowError(
-      'useGuard must be used within <GuardProvider>'
+      'useAccess must be used within <AccessProvider>'
     )
   })
 
   it('provides a guard instance to descendants', () => {
-    let guard: GuardContextValue<{ role: string }> | undefined
+    let guard: AccessContextValue<{ role: string }> | undefined
 
     function Consumer() {
-      guard = useGuard<{ role: string }>()
+      guard = useAccess<{ role: string }>()
       return null
     }
 
     renderToString(
-      <GuardProvider
+      <AccessProvider
         getUser={() => ({ role: 'admin' })}
         hasRole={(user, roles) => roles.includes(user.role)}
       >
         <Consumer />
-      </GuardProvider>
+      </AccessProvider>
     )
 
     expect(guard).toBeDefined()
@@ -56,20 +56,20 @@ describe('GuardProvider', () => {
 
     const { rerender } = render(
       <MemoryRouter key="login" initialEntries={['/private']}>
-        <GuardProvider getUser={() => null} loginPath="/login">
+        <AccessProvider getUser={() => null} loginPath="/login">
           <Routes>
             <Route
               path="/private"
               element={
-                <GuardRoute access="authenticated">
+                <AccessRoute access="authenticated">
                   <div>private page</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signin" element={<LoginPage />} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
@@ -77,20 +77,20 @@ describe('GuardProvider', () => {
 
     rerender(
       <MemoryRouter key="signin" initialEntries={['/private']}>
-        <GuardProvider getUser={() => null} loginPath="/signin">
+        <AccessProvider getUser={() => null} loginPath="/signin">
           <Routes>
             <Route
               path="/private"
               element={
-                <GuardRoute access="authenticated">
+                <AccessRoute access="authenticated">
                   <div>private page</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signin" element={<LoginPage />} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
@@ -98,7 +98,7 @@ describe('GuardProvider', () => {
   })
 })
 
-describe('GuardRoute', () => {
+describe('AccessRoute', () => {
   afterEach(() => {
     cleanup()
   })
@@ -106,7 +106,7 @@ describe('GuardRoute', () => {
   it('renders children when access is allowed', () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
-        <GuardProvider
+        <AccessProvider
           getUser={() => ({ role: 'admin', permissions: ['reports:read'] })}
           hasRole={(user, roles) => roles.includes(user.role)}
           hasPermission={(user, permissions) =>
@@ -117,17 +117,17 @@ describe('GuardRoute', () => {
             <Route
               path="/dashboard"
               element={
-                <GuardRoute
+                <AccessRoute
                   access="authenticated"
                   roles={['admin']}
                   permissions={['reports:read']}
                 >
                   <div>dashboard</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
@@ -146,19 +146,19 @@ describe('GuardRoute', () => {
 
     render(
       <MemoryRouter initialEntries={['/private?tab=overview#section']}>
-        <GuardProvider getUser={() => null}>
+        <AccessProvider getUser={() => null}>
           <Routes>
             <Route
               path="/private"
               element={
-                <GuardRoute access="authenticated">
+                <AccessRoute access="authenticated">
                   <div>private</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
@@ -170,19 +170,19 @@ describe('GuardRoute', () => {
   it('redirects authenticated users away from guest-only routes', () => {
     render(
       <MemoryRouter initialEntries={['/login']}>
-        <GuardProvider getUser={() => ({ role: 'member' })}>
+        <AccessProvider getUser={() => ({ role: 'member' })}>
           <Routes>
             <Route
               path="/login"
               element={
-                <GuardRoute access="guest-only">
+                <AccessRoute access="guest-only">
                   <div>guest page</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/" element={<div>home page</div>} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
@@ -192,7 +192,7 @@ describe('GuardRoute', () => {
   it('redirects users without required roles to forbidden path', () => {
     render(
       <MemoryRouter initialEntries={['/admin']}>
-        <GuardProvider
+        <AccessProvider
           getUser={() => ({ role: 'member', permissions: ['reports:read'] })}
           hasRole={(user, roles) => roles.includes(user.role)}
         >
@@ -200,14 +200,14 @@ describe('GuardRoute', () => {
             <Route
               path="/admin"
               element={
-                <GuardRoute roles={['admin']}>
+                <AccessRoute roles={['admin']}>
                   <div>admin page</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/403" element={<div>forbidden page</div>} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
@@ -217,7 +217,7 @@ describe('GuardRoute', () => {
   it('redirects users without required permissions to forbidden path', () => {
     render(
       <MemoryRouter initialEntries={['/reports']}>
-        <GuardProvider
+        <AccessProvider
           getUser={() => ({ role: 'admin', permissions: ['profile:read'] })}
           hasPermission={(user, permissions) =>
             permissions.every((permission) => user.permissions.includes(permission))
@@ -227,14 +227,14 @@ describe('GuardRoute', () => {
             <Route
               path="/reports"
               element={
-                <GuardRoute permissions={['reports:read']}>
+                <AccessRoute permissions={['reports:read']}>
                   <div>reports page</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/403" element={<div>forbidden page</div>} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
 
