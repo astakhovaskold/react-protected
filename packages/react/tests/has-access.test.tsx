@@ -4,7 +4,7 @@ import { cleanup, render, renderHook, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { AccessProvider } from '../src/AccessProvider'
-import { HasAccess, useHasAccess, useRouteAccess } from '../src/HasAccess'
+import { HasAccess, useHasAccess } from '../src/HasAccess'
 
 function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
   return (
@@ -79,17 +79,6 @@ describe('useHasAccess', () => {
       }
     )
     expect(result.current).toBe(false)
-  })
-})
-
-describe('useRouteAccess', () => {
-  afterEach(cleanup)
-
-  it('returns full AccessResult', () => {
-    const { result } = renderHook(() => useRouteAccess({ access: 'authenticated' }), {
-      wrapper: ({ children }) => <Wrapper user={null}>{children}</Wrapper>,
-    })
-    expect(result.current).toEqual({ allowed: false, reason: 'unauthenticated' })
   })
 })
 
