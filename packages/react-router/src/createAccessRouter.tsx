@@ -41,17 +41,13 @@ function GuardedElement<TUser>({
   RouteComponent,
 }: GuardedElementProps<TUser>) {
   const location = useLocation()
-  const currentPath = `${location.pathname}${location.search}${location.hash}`
-  const result = guard.check(
-    {
-      path: location.pathname,
-      access,
-      roles,
-      permissions,
-      meta,
-    },
-    currentPath
-  )
+  const result = guard.check({
+    path: location.pathname,
+    access,
+    roles,
+    permissions,
+    meta,
+  })
 
   if (!result.allowed) {
     return <Navigate to={result.redirectTo} replace />
@@ -86,29 +82,6 @@ function wrapGuardedElement<TUser>(
   )
 }
 
-function getCurrentPath(url: string) {
-  const requestUrl = new URL(url)
-
-  return `${requestUrl.pathname}${requestUrl.search}${requestUrl.hash}`
-}
-
-function checkRoute<TUser>(
-  context: GuardContext<TUser>,
-  currentPath: string,
-  pathname: string
-) {
-  return context.guard.check(
-    {
-      path: pathname,
-      access: context.protection.access,
-      roles: context.protection.roles,
-      permissions: context.protection.permissions,
-      meta: context.protection.meta,
-    },
-    currentPath
-  )
-}
-
 function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
   handler: ((args: TArgs) => TResult) | boolean | undefined,
   context: GuardContext<TUser>
@@ -118,9 +91,8 @@ function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
   }
 
   return ((args: TArgs) => {
-    const currentPath = getCurrentPath(args.request.url)
-    const pathname = new URL(args.request.url).pathname
-    const result = checkRoute(context, currentPath, pathname)
+    const { pathname } = new URL(args.request.url)
+    const result = context.guard.check({ path: pathname, ...context.protection })
 
     if (!result.allowed) {
       return redirect(result.redirectTo) as TResult

@@ -1,32 +1,21 @@
-import { Navigate, useLocation } from 'react-router-dom'
+import { memo } from 'react'
+import { Navigate, Outlet } from 'react-router-dom'
 
-import { useAccess } from './AccessProvider'
+import { useRouteAccess } from './HasAccess'
 import type { AccessRouteProps } from './types'
 
-export function AccessRoute({
+export const AccessRoute = memo(function AccessRoute({
   access,
   roles,
   permissions,
   meta,
   children,
 }: AccessRouteProps) {
-  const guard = useAccess()
-  const location = useLocation()
-  const currentPath = `${location.pathname}${location.search}${location.hash}`
-  const result = guard.check(
-    {
-      path: location.pathname,
-      access,
-      roles,
-      permissions,
-      meta,
-    },
-    currentPath
-  )
+  const result = useRouteAccess({ access, roles, permissions, meta })
 
   if (!result.allowed) {
     return <Navigate to={result.redirectTo} replace />
   }
 
-  return children
-}
+  return children ?? <Outlet />
+})

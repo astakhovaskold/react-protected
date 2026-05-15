@@ -1,7 +1,7 @@
 export { createAccessRouter } from './createAccessRouter'
 export { AccessProvider, useAccess } from './AccessProvider'
 export { AccessRoute } from './AccessRoute'
-export { HasAccess, useHasAccess } from './HasAccess'
+export { HasAccess, useHasAccess, useRouteAccess } from './HasAccess'
 export type {
   AccessContextValue,
   AccessProviderProps,
