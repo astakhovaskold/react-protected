@@ -6,14 +6,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { AccessProvider } from '../src/AccessProvider'
 import { HasAccess, useHasAccess } from '../src/HasAccess'
 
+type TestUser = { roles: string[]; permissions: string[] }
+
 function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
   return (
-    <AccessProvider
-      getUser={() => user}
-      hasRole={(u: { roles: string[] }, roles) => roles.some((r) => u.roles.includes(r))}
-      hasPermission={(u: { permissions: string[] }, perms) =>
-        perms.every((p) => u.permissions.includes(p))
-      }
+    <AccessProvider<TestUser>
+      getUser={() => user as TestUser | null}
+      hasRole={(u, roles) => roles.some((r) => u.roles.includes(r))}
+      hasPermission={(u, perms) => perms.every((p) => u.permissions.includes(p))}
     >
       {children}
     </AccessProvider>

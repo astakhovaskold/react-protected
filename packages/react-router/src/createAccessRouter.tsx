@@ -1,4 +1,4 @@
-import type { Guard } from '@react-protected/core'
+import type { AccessConfig, Guard } from '@react-protected/core'
 import { createGuard } from '@react-protected/core'
 import type { ComponentType, ReactNode } from 'react'
 import {
@@ -132,7 +132,7 @@ function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
       return handler(args)
     }
 
-    const result = ctx.guard.check(ctx.protection)
+    const result = ctx.guard.check(ctx.protection as AccessConfig)
 
     if (!result.allowed) {
       const redirectTo = buildRedirect(
