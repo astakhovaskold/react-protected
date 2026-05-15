@@ -1,8 +1,8 @@
 {
-  "name": "@react-protected/react-router",
+  "name": "@react-protected/react",
   "version": "0.1.0",
   "license": "MIT",
-  "description": "React Router data router adapter for react-protected",
+  "description": "React context and hooks for react-protected",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -24,13 +24,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@react-protected/core": "workspace:*",
-    "@react-protected/react": "workspace:*"
+    "@react-protected/core": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
-    "react-router-dom": ">=6.4.0"
+    "react-dom": ">=18.0.0"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
@@ -38,7 +36,6 @@
     "jsdom": "^29.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.15.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^4.0.0"
   }

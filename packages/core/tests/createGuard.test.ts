@@ -14,69 +14,71 @@ describe('createGuard', () => {
       hasRole: (u, roles) => roles.some((r) => u.roles.includes(r)),
       hasPermission: (u, permissions) =>
         permissions.every((permission) => u.permissions?.includes(permission)),
-      loginPath: '/login',
-      forbiddenPath: '/403',
-      defaultPath: '/dashboard',
     })
 
   it('allows public routes for everyone', () => {
     const guard = makeGuard(null)
-    expect(guard.check({ path: '/', access: 'public' })).toEqual({ allowed: true })
+    expect(guard.check({ access: 'public' })).toEqual({ allowed: true })
   })
 
-  it('redirects unauthenticated user from protected route to loginPath', () => {
+  it('returns unauthenticated for protected route when no user', () => {
     const guard = makeGuard(null)
-    const result = guard.check({ path: '/dashboard', access: 'authenticated' })
-    expect(result).toEqual({ allowed: false, reason: 'unauthenticated', redirectTo: '/login' })
+    expect(guard.check({ access: 'authenticated' })).toEqual({
+      allowed: false,
+      reason: 'unauthenticated',
+    })
   })
 
-  it('redirects authenticated user from guest-only route to defaultPath', () => {
+  it('returns guest-only for authenticated user on guest-only route', () => {
     const guard = makeGuard({ roles: ['viewer'] })
-    const result = guard.check({ path: '/login', access: 'guest-only' })
-    expect(result).toEqual({ allowed: false, reason: 'guest-only', redirectTo: '/dashboard' })
+    expect(guard.check({ access: 'guest-only' })).toEqual({
+      allowed: false,
+      reason: 'guest-only',
+    })
   })
 
   it('allows user with correct role', () => {
     const guard = makeGuard({ roles: ['admin'] })
-    const result = guard.check({ path: '/admin', access: 'authenticated', roles: ['admin'] })
-    expect(result).toEqual({ allowed: true })
+    expect(guard.check({ access: 'authenticated', roles: ['admin'] })).toEqual({
+      allowed: true,
+    })
   })
 
-  it('forbids user without required role', () => {
+  it('returns forbidden for user without required role', () => {
     const guard = makeGuard({ roles: ['viewer'] })
-    const result = guard.check({ path: '/admin', access: 'authenticated', roles: ['admin'] })
-    expect(result).toEqual({ allowed: false, reason: 'forbidden', redirectTo: '/403' })
-  })
-
-  it('allows user with required permissions', () => {
-    const guard = makeGuard({ roles: ['manager'], permissions: ['contracts:read'] })
-    const result = guard.check({
-      path: '/contracts',
-      access: 'authenticated',
-      permissions: ['contracts:read'],
+    expect(guard.check({ access: 'authenticated', roles: ['admin'] })).toEqual({
+      allowed: false,
+      reason: 'forbidden',
     })
-    expect(result).toEqual({ allowed: true })
   })
 
-  it('forbids user without required permissions', () => {
+  it('allows user with all required permissions', () => {
     const guard = makeGuard({ roles: ['manager'], permissions: ['contracts:read'] })
-    const result = guard.check({
-      path: '/contracts/new',
-      access: 'authenticated',
-      permissions: ['contracts:write'],
+    expect(
+      guard.check({ access: 'authenticated', permissions: ['contracts:read'] })
+    ).toEqual({ allowed: true })
+  })
+
+  it('returns forbidden for user missing required permissions', () => {
+    const guard = makeGuard({ roles: ['manager'], permissions: ['contracts:read'] })
+    expect(
+      guard.check({ access: 'authenticated', permissions: ['contracts:write'] })
+    ).toEqual({ allowed: false, reason: 'forbidden' })
+  })
+
+  it('requires auth implicitly when roles are set', () => {
+    const guard = makeGuard(null)
+    expect(guard.check({ roles: ['admin'] })).toEqual({
+      allowed: false,
+      reason: 'unauthenticated',
     })
-    expect(result).toEqual({ allowed: false, reason: 'forbidden', redirectTo: '/403' })
   })
 
-  it('requires auth implicitly when roles are set without explicit access', () => {
+  it('requires auth implicitly when permissions are set', () => {
     const guard = makeGuard(null)
-    const result = guard.check({ path: '/admin', roles: ['admin'] })
-    expect(result).toEqual({ allowed: false, reason: 'unauthenticated', redirectTo: '/login' })
-  })
-
-  it('requires auth implicitly when permissions are set without explicit access', () => {
-    const guard = makeGuard(null)
-    const result = guard.check({ path: '/reports', permissions: ['reports:read'] })
-    expect(result).toEqual({ allowed: false, reason: 'unauthenticated', redirectTo: '/login' })
+    expect(guard.check({ permissions: ['reports:read'] })).toEqual({
+      allowed: false,
+      reason: 'unauthenticated',
+    })
   })
 })

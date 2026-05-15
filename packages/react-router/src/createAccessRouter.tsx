@@ -1,5 +1,6 @@
 import type { Guard } from '@react-protected/core'
 import { createGuard } from '@react-protected/core'
+import type { RouteProtection } from '@react-protected/react'
 import type { ComponentType, ReactNode } from 'react'
 import {
   createBrowserRouter,
@@ -11,24 +12,48 @@ import {
 } from 'react-router-dom'
 
 import type {
+  CreateAccessRouterConfig,
   CreateAccessRouterOptions,
-  CreateRouterGuardOptions,
   ProtectedRouteObject,
-  RouteProtection,
 } from './types'
+
+type RouterGuardContext<TUser> = {
+  guard: Guard<TUser>
+  protection: RouteProtection
+  hasStaticUi: boolean
+  loginPath: string
+  forbiddenPath: string
+  defaultPath: string
+  callbackUrlParam?: string
+}
 
 type GuardedElementProps<TUser> = RouteProtection & {
   guard: Guard<TUser>
   routeElement?: ReactNode
   RouteComponent?: ComponentType | null
+  loginPath: string
+  forbiddenPath: string
+  defaultPath: string
+  callbackUrlParam?: string
 }
 
 type LazyRouteLoader = Record<string, (() => Promise<unknown>) | undefined>
 
-type GuardContext<TUser> = {
-  guard: Guard<TUser>
-  protection: RouteProtection
-  hasStaticUi: boolean
+function buildRedirect(
+  reason: string,
+  currentPath: string,
+  loginPath: string,
+  forbiddenPath: string,
+  defaultPath: string,
+  callbackUrlParam?: string
+): string {
+  if (reason === 'unauthenticated') {
+    return callbackUrlParam
+      ? `${loginPath}?${callbackUrlParam}=${encodeURIComponent(currentPath)}`
+      : loginPath
+  }
+  if (reason === 'forbidden') return forbiddenPath
+  return defaultPath
 }
 
 function GuardedElement<TUser>({
@@ -39,63 +64,68 @@ function GuardedElement<TUser>({
   guard,
   routeElement,
   RouteComponent,
+  loginPath,
+  forbiddenPath,
+  defaultPath,
+  callbackUrlParam,
 }: GuardedElementProps<TUser>) {
   const location = useLocation()
-  const result = guard.check({
-    path: location.pathname,
-    access,
-    roles,
-    permissions,
-    meta,
-  })
+  const currentPath = `${location.pathname}${location.search}${location.hash}`
+  const result = guard.check({ path: location.pathname, access, roles, permissions, meta })
 
   if (!result.allowed) {
-    return <Navigate to={result.redirectTo} replace />
+    const redirectTo = buildRedirect(
+      result.reason,
+      currentPath,
+      loginPath,
+      forbiddenPath,
+      defaultPath,
+      callbackUrlParam
+    )
+    return <Navigate to={redirectTo} replace />
   }
 
-  if (RouteComponent) {
-    return <RouteComponent />
-  }
-
-  if (routeElement !== undefined && routeElement !== null) {
-    return routeElement
-  }
-
+  if (RouteComponent) return <RouteComponent />
+  if (routeElement !== undefined && routeElement !== null) return routeElement
   return <Outlet />
 }
 
-function wrapGuardedElement<TUser>(
-  context: GuardContext<TUser>,
-  routeElement: ReactNode | undefined,
-  RouteComponent: ComponentType | null | undefined
-) {
+function wrapGuardedElement<TUser>(ctx: RouterGuardContext<TUser>, element?: ReactNode, Component?: ComponentType | null) {
   return (
     <GuardedElement
-      access={context.protection.access}
-      roles={context.protection.roles}
-      permissions={context.protection.permissions}
-      meta={context.protection.meta}
-      guard={context.guard}
-      routeElement={routeElement}
-      RouteComponent={RouteComponent ?? null}
+      {...ctx.protection}
+      guard={ctx.guard}
+      routeElement={element}
+      RouteComponent={Component ?? null}
+      loginPath={ctx.loginPath}
+      forbiddenPath={ctx.forbiddenPath}
+      defaultPath={ctx.defaultPath}
+      callbackUrlParam={ctx.callbackUrlParam}
     />
   )
 }
 
 function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
   handler: ((args: TArgs) => TResult) | boolean | undefined,
-  context: GuardContext<TUser>
+  ctx: RouterGuardContext<TUser>
 ) {
-  if (handler === undefined || typeof handler === 'boolean') {
-    return handler
-  }
+  if (handler === undefined || typeof handler === 'boolean') return handler
 
   return ((args: TArgs) => {
-    const { pathname } = new URL(args.request.url)
-    const result = context.guard.check({ path: pathname, ...context.protection })
+    const url = new URL(args.request.url)
+    const currentPath = `${url.pathname}${url.search}`
+    const result = ctx.guard.check({ path: url.pathname, ...ctx.protection })
 
     if (!result.allowed) {
-      return redirect(result.redirectTo) as TResult
+      const redirectTo = buildRedirect(
+        result.reason,
+        currentPath,
+        ctx.loginPath,
+        ctx.forbiddenPath,
+        ctx.defaultPath,
+        ctx.callbackUrlParam
+      )
+      return redirect(redirectTo) as TResult
     }
 
     return handler(args)
@@ -106,17 +136,14 @@ async function resolveLazyObject(lazyObject: LazyRouteLoader) {
   const entries = await Promise.all(
     Object.entries(lazyObject).map(async ([key, load]) => [key, await load?.()] as const)
   )
-
   return Object.fromEntries(entries)
 }
 
 function wrapLazyRoute<TUser>(
   lazy: ProtectedRouteObject<TUser>['lazy'],
-  context: GuardContext<TUser>
+  ctx: RouterGuardContext<TUser>
 ): RouteObject['lazy'] | undefined {
-  if (!lazy) {
-    return undefined
-  }
+  if (!lazy) return undefined
 
   const resolveRoute =
     typeof lazy === 'function' ? lazy : () => resolveLazyObject(lazy as LazyRouteLoader)
@@ -133,21 +160,18 @@ function wrapLazyRoute<TUser>(
       | undefined
 
     if (!resolvedRoute) {
-      return context.hasStaticUi
-        ? {}
-        : { element: wrapGuardedElement(context, undefined, null) }
+      return ctx.hasStaticUi ? {} : { element: wrapGuardedElement(ctx) }
     }
 
     const { element, Component, loader, action, ...routeProps } = resolvedRoute
-
     const wrappedRoute: Record<string, unknown> = {
       ...routeProps,
-      loader: wrapDataFunction(loader, context),
-      action: wrapDataFunction(action, context),
+      loader: wrapDataFunction(loader, ctx),
+      action: wrapDataFunction(action, ctx),
     }
 
-    if (!context.hasStaticUi) {
-      wrappedRoute.element = wrapGuardedElement(context, element, Component ?? null)
+    if (!ctx.hasStaticUi) {
+      wrappedRoute.element = wrapGuardedElement(ctx, element, Component ?? null)
     }
 
     return wrappedRoute
@@ -156,28 +180,27 @@ function wrapLazyRoute<TUser>(
 
 export function createAccessRouter<TUser = unknown>(
   routes: Array<ProtectedRouteObject<TUser>>,
-  options: CreateRouterGuardOptions<TUser>,
+  options: CreateAccessRouterConfig<TUser>,
   routerOptions?: CreateAccessRouterOptions
 ): ReturnType<typeof createBrowserRouter> {
-  const guard = createGuard(options)
+  const {
+    loginPath = '/login',
+    forbiddenPath = '/403',
+    defaultPath = '/',
+    callbackUrlParam,
+    ...guardOptions
+  } = options
 
-  const transform = (
-    inputRoutes: Array<ProtectedRouteObject<TUser>>
-  ): Array<RouteObject> =>
+  const guard = createGuard(guardOptions)
+
+  const transform = (inputRoutes: Array<ProtectedRouteObject<TUser>>): Array<RouteObject> =>
     inputRoutes.map((route) => {
       const {
-        access,
-        roles,
-        permissions,
-        meta,
-        children,
-        element,
-        Component,
-        loader,
-        action,
-        lazy,
+        access, roles, permissions, meta,
+        children, element, Component, loader, action, lazy,
         ...routeProps
       } = route
+
       const hasGuardConfig =
         access !== undefined ||
         Boolean(roles?.length) ||
@@ -187,32 +210,33 @@ export function createAccessRouter<TUser = unknown>(
       if (!hasGuardConfig) {
         return {
           ...routeProps,
-          element,
-          Component,
-          loader,
-          action,
-          lazy,
+          element, Component, loader, action, lazy,
           children: children ? transform(children) : undefined,
         } as RouteObject
       }
 
-      const context: GuardContext<TUser> = {
+      const ctx: RouterGuardContext<TUser> = {
         guard,
         protection: { access, roles, permissions, meta },
         hasStaticUi: (element !== undefined && element !== null) || Component != null,
+        loginPath,
+        forbiddenPath,
+        defaultPath,
+        callbackUrlParam,
       }
+
       const guardedElement =
-        context.hasStaticUi || !lazy
-          ? wrapGuardedElement(context, element, Component ?? null)
+        ctx.hasStaticUi || !lazy
+          ? wrapGuardedElement(ctx, element, Component ?? null)
           : undefined
 
       return {
         ...routeProps,
         element: guardedElement,
         Component: undefined,
-        loader: wrapDataFunction(loader, context),
-        action: wrapDataFunction(action, context),
-        lazy: wrapLazyRoute(lazy, context),
+        loader: wrapDataFunction(loader, ctx),
+        action: wrapDataFunction(action, ctx),
+        lazy: wrapLazyRoute(lazy, ctx),
         children: children ? transform(children) : undefined,
       } as RouteObject
     })
