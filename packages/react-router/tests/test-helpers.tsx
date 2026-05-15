@@ -1,8 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { vi } from 'vitest'
 
-import type { ProtectedRouteObject } from '../src/types'
-import type { CreateAccessRouterConfig } from '../src/types'
+import type { CreateAccessRouterConfig,ProtectedRouteObject  } from '../src/types'
 
 export const NativeRequest = globalThis.Request
 

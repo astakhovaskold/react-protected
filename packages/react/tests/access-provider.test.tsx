@@ -61,20 +61,6 @@ describe('AccessProvider', () => {
   })
 
   it('creates a new guard when props change', () => {
-    let results: boolean[] = []
-
-    function Consumer() {
-      const { guard } = useAccess()
-      results.push(guard.check({ access: 'authenticated' }).allowed)
-      return null
-    }
-
-    const { rerender } = renderHook(() => useAccess(), {
-      wrapper: ({ children }) => (
-        <AccessProvider getUser={() => null}>{children}</AccessProvider>
-      ),
-    })
-
     // unauthenticated
     expect(
       renderHook(() => useAccess(), {

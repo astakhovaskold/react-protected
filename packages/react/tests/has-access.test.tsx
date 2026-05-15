@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { AccessProvider } from '../src/AccessProvider'
 import { HasAccess, useHasAccess } from '../src/HasAccess'
 
-type TestUser = { roles: string[]; permissions: string[] }
+type TestUser = { roles: Array<string>; permissions: Array<string> }
 
 function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
   return (
@@ -89,7 +89,7 @@ describe('HasAccess', () => {
     render(
       <Wrapper user={{ roles: ['admin'], permissions: [] }}>
         <HasAccess roles={['admin']}>
-          <button>Delete</button>
+          <button type="button">Delete</button>
         </HasAccess>
       </Wrapper>
     )
@@ -100,7 +100,7 @@ describe('HasAccess', () => {
     render(
       <Wrapper user={{ roles: ['member'], permissions: [] }}>
         <HasAccess roles={['admin']}>
-          <button>Delete</button>
+          <button type="button">Delete</button>
         </HasAccess>
       </Wrapper>
     )

@@ -103,7 +103,10 @@ function GuardedElement<TUser>({
 function wrapGuardedElement<TUser>(ctx: RouterGuardContext<TUser>, element?: ReactNode, Component?: ComponentType | null) {
   return (
     <GuardedElement
-      {...ctx.protection}
+      access={ctx.protection.access}
+      roles={ctx.protection.roles}
+      permissions={ctx.protection.permissions}
+      meta={ctx.protection.meta}
       guard={ctx.guard}
       routeElement={element}
       RouteComponent={Component ?? null}

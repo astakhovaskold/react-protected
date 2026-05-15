@@ -14,5 +14,5 @@ export function useHasAccess(config: RouteProtection): boolean {
 
 export function HasAccess({ access, roles, permissions, meta, children }: HasAccessProps) {
   const allowed = useHasAccess({ access, roles, permissions, meta })
-  return allowed ? <>{children}</> : null
+  return allowed ? children ?? null : null
 }
