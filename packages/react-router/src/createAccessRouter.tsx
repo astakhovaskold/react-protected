@@ -1,4 +1,4 @@
-import type { Guard } from '@react-protected/core'
+import type { AccessConfig, Guard } from '@react-protected/core'
 import { createGuard } from '@react-protected/core'
 import type { ComponentType, ReactNode } from 'react'
 import {
@@ -103,7 +103,10 @@ function GuardedElement<TUser>({
 function wrapGuardedElement<TUser>(ctx: RouterGuardContext<TUser>, element?: ReactNode, Component?: ComponentType | null) {
   return (
     <GuardedElement
-      {...ctx.protection}
+      access={ctx.protection.access}
+      roles={ctx.protection.roles}
+      permissions={ctx.protection.permissions}
+      meta={ctx.protection.meta}
       guard={ctx.guard}
       routeElement={element}
       RouteComponent={Component ?? null}
@@ -132,7 +135,7 @@ function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
       return handler(args)
     }
 
-    const result = ctx.guard.check(ctx.protection)
+    const result = ctx.guard.check(ctx.protection as AccessConfig)
 
     if (!result.allowed) {
       const redirectTo = buildRedirect(

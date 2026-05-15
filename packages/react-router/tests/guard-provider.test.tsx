@@ -1,12 +1,11 @@
 /* @vitest-environment jsdom */
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { AccessProvider } from '@react-protected/react'
+import { cleanup, render, renderHook,screen  } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { AccessProvider } from '@react-protected/react'
 import { AccessRoute, useRouteAccess } from '../src/AccessRoute'
-import { renderHook } from '@testing-library/react'
 
 describe('AccessRoute', () => {
   afterEach(cleanup)

@@ -6,14 +6,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { AccessProvider } from '../src/AccessProvider'
 import { HasAccess, useHasAccess } from '../src/HasAccess'
 
+type TestUser = { roles: Array<string>; permissions: Array<string> }
+
 function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
   return (
-    <AccessProvider
-      getUser={() => user}
-      hasRole={(u: { roles: string[] }, roles) => roles.some((r) => u.roles.includes(r))}
-      hasPermission={(u: { permissions: string[] }, perms) =>
-        perms.every((p) => u.permissions.includes(p))
-      }
+    <AccessProvider<TestUser>
+      getUser={() => user as TestUser | null}
+      hasRole={(u, roles) => roles.some((r) => u.roles.includes(r))}
+      hasPermission={(u, perms) => perms.every((p) => u.permissions.includes(p))}
     >
       {children}
     </AccessProvider>
@@ -89,7 +89,7 @@ describe('HasAccess', () => {
     render(
       <Wrapper user={{ roles: ['admin'], permissions: [] }}>
         <HasAccess roles={['admin']}>
-          <button>Delete</button>
+          <button type="button">Delete</button>
         </HasAccess>
       </Wrapper>
     )
@@ -100,7 +100,7 @@ describe('HasAccess', () => {
     render(
       <Wrapper user={{ roles: ['member'], permissions: [] }}>
         <HasAccess roles={['admin']}>
-          <button>Delete</button>
+          <button type="button">Delete</button>
         </HasAccess>
       </Wrapper>
     )
