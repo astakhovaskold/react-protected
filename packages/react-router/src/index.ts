@@ -1,13 +1,22 @@
 export { createAccessRouter } from './createAccessRouter'
-export { AccessProvider, useAccess } from './AccessProvider'
 export { AccessRoute } from './AccessRoute'
-export { HasAccess, useHasAccess, useRouteAccess } from './HasAccess'
+export type {
+  CreateAccessRouterConfig,
+  CreateAccessRouterOptions,
+  ProtectedRouteObject,
+} from './types'
+
+export {
+  AccessProvider,
+  useAccess,
+  useHasAccess,
+  useRouteAccess,
+  HasAccess,
+} from '@react-protected/react'
 export type {
   AccessContextValue,
   AccessProviderProps,
   AccessRouteProps,
-  CreateAccessRouterOptions,
-  CreateRouterGuardOptions,
-  ProtectedRouteObject,
+  NavigationConfig,
   RouteProtection,
-} from './types'
+} from '@react-protected/react'

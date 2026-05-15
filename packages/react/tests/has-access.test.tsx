@@ -1,34 +1,29 @@
 /* @vitest-environment jsdom */
 
 import { cleanup, render, renderHook, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { AccessProvider } from '../src/AccessProvider'
-import { HasAccess, useHasAccess } from '../src/HasAccess'
+import { HasAccess, useHasAccess, useRouteAccess } from '../src/HasAccess'
 
 function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
   return (
-    <MemoryRouter>
-      <AccessProvider
-        getUser={() => user}
-        hasRole={(u: { roles: string[] }, roles) => roles.some((r) => u.roles.includes(r))}
-        hasPermission={(u: { permissions: string[] }, perms) =>
-          perms.every((p) => u.permissions.includes(p))
-        }
-      >
-        <Routes>
-          <Route path="*" element={children} />
-        </Routes>
-      </AccessProvider>
-    </MemoryRouter>
+    <AccessProvider
+      getUser={() => user}
+      hasRole={(u: { roles: string[] }, roles) => roles.some((r) => u.roles.includes(r))}
+      hasPermission={(u: { permissions: string[] }, perms) =>
+        perms.every((p) => u.permissions.includes(p))
+      }
+    >
+      {children}
+    </AccessProvider>
   )
 }
 
 describe('useHasAccess', () => {
   afterEach(cleanup)
 
-  it('returns true for authenticated user on authenticated route', () => {
+  it('returns true for authenticated user', () => {
     const { result } = renderHook(() => useHasAccess({ access: 'authenticated' }), {
       wrapper: ({ children }) => (
         <Wrapper user={{ roles: [], permissions: [] }}>{children}</Wrapper>
@@ -37,7 +32,7 @@ describe('useHasAccess', () => {
     expect(result.current).toBe(true)
   })
 
-  it('returns false for unauthenticated user on authenticated route', () => {
+  it('returns false for unauthenticated user on protected route', () => {
     const { result } = renderHook(() => useHasAccess({ access: 'authenticated' }), {
       wrapper: ({ children }) => <Wrapper user={null}>{children}</Wrapper>,
     })
@@ -87,6 +82,17 @@ describe('useHasAccess', () => {
   })
 })
 
+describe('useRouteAccess', () => {
+  afterEach(cleanup)
+
+  it('returns full AccessResult', () => {
+    const { result } = renderHook(() => useRouteAccess({ access: 'authenticated' }), {
+      wrapper: ({ children }) => <Wrapper user={null}>{children}</Wrapper>,
+    })
+    expect(result.current).toEqual({ allowed: false, reason: 'unauthenticated' })
+  })
+})
+
 describe('HasAccess', () => {
   afterEach(cleanup)
 
@@ -127,10 +133,10 @@ describe('HasAccess', () => {
     render(
       <Wrapper user={null}>
         <HasAccess>
-          <span>public content</span>
+          <span>public</span>
         </HasAccess>
       </Wrapper>
     )
-    expect(screen.getByText('public content')).toBeTruthy()
+    expect(screen.getByText('public')).toBeTruthy()
   })
 })

@@ -9,12 +9,12 @@ type HasAccessProps = RouteProtection & {
 }
 
 export function useHasAccess(config: RouteProtection): boolean {
-  const guard = useAccess()
+  const { guard } = useAccess()
   return guard.check(config).allowed
 }
 
 export function useRouteAccess(config: RouteProtection): AccessResult {
-  const guard = useAccess()
+  const { guard } = useAccess()
   return guard.check(config)
 }
 

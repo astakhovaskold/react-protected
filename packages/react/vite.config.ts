@@ -24,7 +24,7 @@ export default defineConfig({
       fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react-router-dom', '@react-protected/core', '@react-protected/react'],
+      external: ['react', 'react-dom', '@react-protected/core'],
     },
   },
 })
