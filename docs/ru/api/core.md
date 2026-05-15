@@ -1,10 +1,10 @@
 # @react-protected/core
 
-Фреймворк-агностик логика. Не зависит от React, роутера или стора.
+Фреймворк-агностик логика контроля доступа. Не зависит от React, роутера или стора.
 
 ## createGuard(options)
 
-Создаёт guard с заданными правилами.
+Создаёт guard, который проверяет доступ на основе текущего пользователя.
 
 ```ts
 import { createGuard } from '@react-protected/core'
@@ -12,59 +12,89 @@ import { createGuard } from '@react-protected/core'
 const guard = createGuard({
   getUser: () => store.getState().user,
   hasRole: (user, roles) => roles.some((r) => user.roles.includes(r)),
+  hasPermission: (user, permissions) =>
+    permissions.every((p) => user.permissions.includes(p)),
 })
 ```
 
 ### Options
 
-| Поле               | Тип                              | Default         | Описание                                       |
-| ------------------ | -------------------------------- | --------------- | ---------------------------------------------- |
-| `getUser`          | `() => TUser \| null`            | —               | **Required.** Возвращает текущего пользователя |
-| `isAuthenticated`  | `(user) => boolean`              | `user !== null` | Считать ли пользователя залогиненным           |
-| `hasRole`          | `(user, roles) => boolean`       | `() => false`   | Проверка ролей (RBAC)                          |
-| `hasPermission`    | `(user, permissions) => boolean` | `() => false`   | Проверка прав (ABAC)                           |
-| `loginPath`        | `string`                         | `'/login'`      | Куда редиректить незалогиненных                |
-| `forbiddenPath`    | `string`                         | `'/403'`        | Куда редиректить при нехватке прав             |
-| `defaultPath`      | `string`                         | `'/'`           | Куда редиректить залогиненных с `guest-only`   |
-| `callbackUrlParam` | `string`                         | `'callbackUrl'` | Имя query-параметра для возврата после логина  |
+| Поле              | Тип                              | Default         | Описание                                                 |
+| ----------------- | -------------------------------- | --------------- | -------------------------------------------------------- |
+| `getUser`         | `() => TUser \| null`            | —               | **Required.** Возвращает текущего пользователя или `null`|
+| `isAuthenticated` | `(user) => boolean`              | `user !== null` | Переопределяет проверку аутентификации                   |
+| `hasRole`         | `(user, roles) => boolean`       | `() => false`   | Проверка ролей (RBAC)                                    |
+| `hasPermission`   | `(user, permissions) => boolean` | `() => false`   | Проверка прав доступа (ABAC)                             |
 
-## guard.check(route, currentPath)
+Пути для редиректов (`loginPath`, `forbiddenPath`, `defaultPath`) и `callbackUrlParam` не входят в ядро — они живут на уровне адаптера (`AccessProvider` / `createAccessRouter`).
 
-Проверяет доступ к маршруту. Возвращает `AccessResult`.
+## guard.check(config)
+
+Проверяет доступ текущего пользователя к маршруту и возвращает `AccessResult`.
 
 ```ts
-const result = guard.check(
-  { path: '/dashboard', access: 'authenticated', roles: ['admin'] },
-  '/dashboard'
-)
+const result = guard.check({ access: 'authenticated', roles: ['admin'] })
 
 if (result.allowed) {
-  // пускаем
+  // пропустить
 } else {
-  // result.reason: 'unauthenticated' | 'forbidden' | 'guest-only'
-  // result.redirectTo: строка куда редиректить
-  redirect(result.redirectTo)
+  // result.reason: 'unauthenticated' | 'forbidden'
+  console.log(result.reason)
 }
 ```
 
-## RouteConfig
+`check` — чистая функция: читает пользователя через `getUser()` при каждом вызове, побочных эффектов нет.
+
+### Неявное требование аутентификации
+
+Если указаны `roles` или `permissions` без явного `access`, маршрут автоматически считается `'authenticated'`:
 
 ```ts
-type RouteConfig = {
-  path: string
-  access?: 'public' | 'authenticated' | 'guest-only' // default: 'public'
+guard.check({ roles: ['admin'] })
+// эквивалентно: guard.check({ access: 'authenticated', roles: ['admin'] })
+```
+
+## AccessConfig
+
+Объект, передаваемый в `guard.check()`:
+
+```ts
+type AccessConfig = {
+  access?: AccessLevel   // default: 'public'
   roles?: string[]
   permissions?: string[]
   meta?: Record<string, unknown>
 }
 ```
 
+## AccessLevel
+
+```ts
+type AccessLevel = 'public' | 'authenticated'
+```
+
+`'guest-only'` — это концепция роутинга, а не контроля доступа. Она определена в адаптере (`@react-protected/react-router`) как `RouterAccessLevel = AccessLevel | 'guest-only'` и обрабатывается до вызова `guard.check()`.
+
 ## AccessResult
 
 ```ts
 type AccessResult =
   | { allowed: true }
-  | { allowed: false; reason: 'unauthenticated'; redirectTo: string }
-  | { allowed: false; reason: 'forbidden'; redirectTo: string }
-  | { allowed: false; reason: 'guest-only'; redirectTo: string }
+  | { allowed: false; reason: 'unauthenticated' }
+  | { allowed: false; reason: 'forbidden' }
 ```
+
+Целевые пути для редиректов определяются адаптером, а не ядром.
+
+## Guard
+
+Объект, возвращаемый `createGuard`:
+
+```ts
+type Guard<TUser = unknown> = {
+  check: (config: AccessConfig) => AccessResult
+  options: Required<GuardOptions<TUser>>
+}
+```
+
+`guard.options` открывает доступ к resolved-коллбэкам (с заполненными дефолтами). Адаптеры используют `guard.options.getUser()` и `guard.options.isAuthenticated()` для логики, которую нужно выполнить до вызова `check()` (например, для `guest-only`).

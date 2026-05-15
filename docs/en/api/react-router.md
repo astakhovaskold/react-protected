@@ -1,84 +1,77 @@
 # @react-protected/react-router
 
-Adapter for React Router data routers and JSX wrappers around regular `Routes`.
+Adapter for React Router. Includes everything from `@react-protected/react` — you do not need to install both packages.
 
-## createGuardedRouter(routes, options, routerOptions?)
+## AccessProvider
 
-Takes an array of protected routes and returns a standard React Router router.
-
-```ts
-import { createGuardedRouter } from '@react-protected/react-router'
-
-const router = createGuardedRouter(routes, options, {
-  basename: '/app',
-})
-```
-
-### routes
-
-An array of `ProtectedRouteObject`:
-
-```ts
-type ProtectedRouteObject = RouteObject & {
-  access?: 'public' | 'authenticated' | 'guest-only'
-  roles?: string[]
-  permissions?: string[]
-  meta?: Record<string, unknown>
-}
-```
-
-Nested routes, `loader`/`action`, layout routes, and `lazy` routes are supported.
-
-### options
-
-All options from `createGuard`.
-
-### routerOptions
-
-Optional third argument. It is forwarded as-is to the second argument of `createBrowserRouter(routes, opts)`.
-
-### Behavior
-
-- UI checks work for `element`, `Component`, layout routes, and lazy routes.
-- If access is denied, `loader` and `action` are not executed. A redirect is returned instead using the same rules as `createGuard`.
-- If a route defines both static UI and lazy UI, static UI keeps priority.
-
-## JSX API
-
-### GuardProvider
-
-Creates a `guard` from the same options as `createGuard` and places it into React context.
+Provides the guard and navigation config to the React component tree. Required for `AccessRoute`, `useAccess`, `useHasAccess`, and `HasAccess`.
 
 ```tsx
-<GuardProvider
+import { AccessProvider } from '@react-protected/react-router'
+
+<AccessProvider
   getUser={() => authStore.user}
   hasRole={(user, roles) => roles.some((role) => user.roles.includes(role))}
+  hasPermission={(user, perms) => perms.every((p) => user.permissions.includes(p))}
+  loginPath="/login"
+  forbiddenPath="/403"
+  defaultPath="/dashboard"
+  callbackUrlParam="next"
 >
   {children}
-</GuardProvider>
+</AccessProvider>
 ```
 
-`GuardProvider` is declarative: when its props change, descendants receive a new `guard` with the updated options.
+### Props
 
-### GuardRoute
+**Guard options** (passed to `createGuard` internally):
 
-Protects a specific route element and renders `<Navigate replace />` when access is denied.
+| Prop              | Type                             | Default         | Description                                    |
+| ----------------- | -------------------------------- | --------------- | ---------------------------------------------- |
+| `getUser`         | `() => TUser \| null`            | —               | **Required.** Returns the current user         |
+| `isAuthenticated` | `(user) => boolean`              | `user !== null` | Custom authenticated check                     |
+| `hasRole`         | `(user, roles) => boolean`       | `() => false`   | Role check for RBAC                            |
+| `hasPermission`   | `(user, perms) => boolean`       | `() => false`   | Permission check for ABAC                      |
+
+**Navigation config** (used by adapters for redirects):
+
+| Prop               | Type     | Default      | Description                                            |
+| ------------------ | -------- | ------------ | ------------------------------------------------------ |
+| `loginPath`        | `string` | `'/login'`   | Where unauthenticated users are redirected             |
+| `forbiddenPath`    | `string` | `'/403'`     | Where users without the required role/permission go    |
+| `defaultPath`      | `string` | `'/'`        | Where authenticated users go from `guest-only` routes  |
+| `callbackUrlParam` | `string` | —            | If set, appends the current path as a query param on login redirect |
+
+`AccessProvider` is declarative: when its props change, descendants receive a fresh guard with updated options.
+
+## AccessRoute
+
+Protects a JSX route element. Renders `<Navigate replace />` when access is denied, `children` or `<Outlet />` when allowed.
 
 ```tsx
+import { AccessRoute } from '@react-protected/react-router'
+
+// Children pattern
 <Route
   path="/dashboard"
   element={
-    <GuardRoute access="authenticated" permissions={['reports:read']}>
+    <AccessRoute access="authenticated" permissions={['reports:read']}>
       <DashboardPage />
-    </GuardRoute>
+    </AccessRoute>
   }
 />
+
+// Layout (Outlet) pattern
+<Route path="/admin" element={<AccessRoute access="authenticated" roles={['admin']} />}>
+  <Route index element={<AdminDashboard />} />
+  <Route path="users" element={<AdminUsers />} />
+</Route>
 ```
 
-Its props match the route protection fields:
+### Props
 
 ```ts
-type GuardRouteProps = {
+type AccessRouteProps = {
   access?: 'public' | 'authenticated' | 'guest-only'
   roles?: string[]
   permissions?: string[]
@@ -87,32 +80,132 @@ type GuardRouteProps = {
 }
 ```
 
-### useGuard
+### Redirect behavior
 
-Returns the low-level `guard` from context. Useful when you want a custom access check or custom UI around `guard.check(...)`.
+| Condition                                   | Redirect target                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------- |
+| `access: 'guest-only'` + authenticated      | `defaultPath`                                                          |
+| `access: 'authenticated'` + not logged in   | `loginPath` (with `?{callbackUrlParam}=...` if configured)             |
+| Role or permission check fails              | `forbiddenPath`                                                        |
+
+## createAccessRouter(routes, options, routerOptions?)
+
+Takes an array of protected routes and returns a standard React Router `router`. Guards are applied to `element`, `Component`, `loader`, `action`, and `lazy` routes.
+
+```ts
+import { createAccessRouter } from '@react-protected/react-router'
+
+const router = createAccessRouter(
+  [
+    { path: '/', element: <HomePage /> },
+    { path: '/login', element: <LoginPage />, access: 'guest-only' },
+    {
+      path: '/dashboard',
+      access: 'authenticated',
+      lazy: async () => ({ Component: DashboardPage }),
+    },
+    {
+      path: '/admin',
+      access: 'authenticated',
+      roles: ['admin'],
+      loader: async () => fetchAdminData(),
+      element: <AdminPage />,
+    },
+    { path: '/403', element: <Page403 /> },
+  ],
+  {
+    getUser: () => useAuthStore.getState().user,
+    hasRole: (user, roles) => roles.some((role) => user.roles.includes(role)),
+    loginPath: '/login',
+    forbiddenPath: '/403',
+    defaultPath: '/dashboard',
+    callbackUrlParam: 'next',
+  },
+  { basename: '/app' } // forwarded to createBrowserRouter
+)
+```
+
+### routes — ProtectedRouteObject
+
+A superset of React Router's `RouteObject` with access fields:
+
+```ts
+type ProtectedRouteObject = RouteObject & {
+  access?: 'public' | 'authenticated' | 'guest-only'
+  roles?: string[]
+  permissions?: string[]
+  meta?: Record<string, unknown>
+  children?: ProtectedRouteObject[]
+}
+```
+
+### options — CreateAccessRouterConfig
+
+All `AccessProvider` props except `children`.
+
+### Behavior
+
+- If access is denied, `loader` and `action` are not executed — a redirect response is returned instead.
+- If a route has both static UI (`element` / `Component`) and `lazy`, static UI takes priority for rendering; `lazy` loader/action are still wrapped.
+
+## useAccess()
+
+Returns the full context value including the guard and navigation config.
 
 ```tsx
-const guard = useGuard<User>()
-const result = guard.check({ path: '/admin', roles: ['admin'] }, '/admin')
+import { useAccess } from '@react-protected/react-router'
+
+const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam } = useAccess<User>()
+const result = guard.check({ roles: ['admin'] })
 ```
 
-Calling it outside `GuardProvider` throws:
+Throws if called outside `<AccessProvider>`.
+
+## useRouteAccess(config)
+
+Calls `guard.check()` and returns the `AccessResult`. Useful for custom redirect logic.
+
+```tsx
+import { useRouteAccess } from '@react-protected/react-router'
+
+const result = useRouteAccess({ access: 'authenticated', roles: ['admin'] })
+// { allowed: boolean, reason?: 'unauthenticated' | 'forbidden' }
+```
+
+## useHasAccess(config)
+
+Returns `true` if `guard.check(config).allowed`, `false` otherwise. Use this for conditional UI rendering.
+
+```tsx
+import { useHasAccess } from '@react-protected/react-router'
+
+const canDelete = useHasAccess({ roles: ['admin'] })
+```
+
+## HasAccess
+
+Component version of `useHasAccess`. Renders `children` when access is allowed, `null` otherwise.
+
+```tsx
+import { HasAccess } from '@react-protected/react-router'
+
+<HasAccess roles={['admin']}>
+  <button>Delete</button>
+</HasAccess>
+```
+
+## callbackUrl flow
+
+When `callbackUrlParam` is set, unauthenticated redirects include the current path:
+
+```
+/dashboard?tab=overview → /login?next=%2Fdashboard%3Ftab%3Doverview
+```
+
+Handle the return in your login page:
 
 ```ts
-useGuard must be used within <GuardProvider>
-```
-
-## callbackUrl
-
-When an unauthenticated user is redirected from a protected route, `callbackUrl` is added automatically:
-
-```
-/dashboard → /login?callbackUrl=%2Fdashboard
-```
-
-After login, redirecting back is handled by your application:
-
-```ts
-const callbackUrl = new URLSearchParams(location.search).get('callbackUrl')
+const [params] = useSearchParams()
+const callbackUrl = params.get('next')
 navigate(callbackUrl ?? '/dashboard', { replace: true })
 ```

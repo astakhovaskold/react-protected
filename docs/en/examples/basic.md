@@ -1,20 +1,18 @@
 # Basic: Auth and Guest Flow
 
-Minimal example: public pages, a login page for guests only, and a dashboard for authenticated users only.
+Public home, a login page only for guests, a dashboard for authenticated users.
+
+## Data router
 
 ```ts
 // router.ts
-import { createGuardedRouter } from '@react-protected/react-router'
+import { createAccessRouter } from '@react-protected/react-router'
 import { useAuthStore } from './entities/auth'
-import { LoginPage, DashboardPage, HomePage, Page403, Page404 } from './pages'
+import { LoginPage, DashboardPage, HomePage, Page403 } from './pages'
 
-export const router = createGuardedRouter(
+export const router = createAccessRouter(
   [
-    {
-      path: '/',
-      element: <HomePage />,
-      // access is omitted -> defaults to 'public'
-    },
+    { path: '/', element: <HomePage /> },
     {
       path: '/login',
       element: <LoginPage />,
@@ -23,16 +21,16 @@ export const router = createGuardedRouter(
     {
       path: '/dashboard',
       element: <DashboardPage />,
-      access: 'authenticated', // unauthenticated users are redirected to /login?callbackUrl=%2Fdashboard
+      access: 'authenticated', // unauthenticated users go to /login?next=%2Fdashboard
     },
     { path: '/403', element: <Page403 /> },
-    { path: '*', element: <Page404 /> },
   ],
   {
     getUser: () => useAuthStore.getState().user,
     loginPath: '/login',
     forbiddenPath: '/403',
     defaultPath: '/dashboard',
+    callbackUrlParam: 'next',
   }
 )
 ```
@@ -45,44 +43,47 @@ import { router } from './router'
 export const App = () => <RouterProvider router={router} />
 ```
 
-Alternative for standard JSX routing without `createGuardedRouter`:
+## JSX routes
 
 ```tsx
 import { Route, Routes } from 'react-router-dom'
-import { GuardProvider, GuardRoute } from '@react-protected/react-router'
+import { AccessProvider, AccessRoute } from '@react-protected/react-router'
 
 export const App = () => (
-  <GuardProvider
+  <AccessProvider
     getUser={() => useAuthStore.getState().user}
     loginPath="/login"
     forbiddenPath="/403"
     defaultPath="/dashboard"
+    callbackUrlParam="next"
   >
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route
         path="/login"
         element={
-          <GuardRoute access="guest-only">
+          <AccessRoute access="guest-only">
             <LoginPage />
-          </GuardRoute>
+          </AccessRoute>
         }
       />
       <Route
         path="/dashboard"
         element={
-          <GuardRoute access="authenticated">
+          <AccessRoute access="authenticated">
             <DashboardPage />
-          </GuardRoute>
+          </AccessRoute>
         }
       />
     </Routes>
-  </GuardProvider>
+  </AccessProvider>
 )
 ```
 
+## Handling callbackUrl after login
+
 ```tsx
-// pages/LoginPage.tsx - handle callbackUrl after login
+// pages/LoginPage.tsx
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from './entities/auth'
 
@@ -94,8 +95,7 @@ export const LoginPage = () => {
   const handleLogin = async (email: string, password: string) => {
     const { user, token } = await AuthAPI.login(email, password)
     setAuth(user, token)
-    // callbackUrl is populated automatically
-    navigate(params.get('callbackUrl') ?? '/dashboard', { replace: true })
+    navigate(params.get('next') ?? '/dashboard', { replace: true })
   }
 
   // ...

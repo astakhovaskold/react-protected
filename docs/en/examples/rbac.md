@@ -1,7 +1,7 @@
 # RBAC: Role-Based Access
 
 ```ts
-// types.ts - your own domain types, the library does not impose a user shape
+// types.ts — your own domain types; the library does not impose a user shape
 type User = {
   id: string
   roles: ('admin' | 'manager' | 'viewer')[]
@@ -10,7 +10,9 @@ type User = {
 
 ```ts
 // router.ts
-export const router = createGuardedRouter(
+import { createAccessRouter } from '@react-protected/react-router'
+
+export const router = createAccessRouter(
   [
     { path: '/login', element: <LoginPage />, access: 'guest-only' },
     { path: '/dashboard', element: <DashboardPage />, access: 'authenticated' },
@@ -18,20 +20,20 @@ export const router = createGuardedRouter(
       path: '/admin',
       element: <AdminPage />,
       access: 'authenticated',
-      roles: ['admin'], // admin only
+      roles: ['admin'],
     },
     {
       path: '/reports',
       element: <ReportsPage />,
       access: 'authenticated',
-      roles: ['admin', 'manager'], // admin or manager
+      roles: ['admin', 'manager'], // admin OR manager
     },
     { path: '/403', element: <Page403 /> },
   ],
   {
     getUser: () => useAuthStore.getState().user,
 
-    // You define the rule: OR, AND, hierarchy, or anything else
+    // You define the rule: OR semantics here
     hasRole: (user: User, roles) => roles.some((role) => user.roles.includes(role)),
 
     loginPath: '/login',
@@ -40,9 +42,29 @@ export const router = createGuardedRouter(
 )
 ```
 
-## Role Hierarchy
+## Guarding UI elements
 
-If your roles are hierarchical, for example `admin` includes `manager` and `manager` includes `viewer`:
+Use `HasAccess` or `useHasAccess` to hide elements based on roles — no route change required:
+
+```tsx
+import { HasAccess } from '@react-protected/react-router'
+
+const Toolbar = () => (
+  <nav>
+    <HasAccess roles={['admin']}>
+      <button>Delete user</button>
+    </HasAccess>
+
+    <HasAccess roles={['admin', 'manager']}>
+      <button>Export report</button>
+    </HasAccess>
+  </nav>
+)
+```
+
+## Role hierarchy
+
+If your roles are hierarchical (e.g. `admin` includes `manager` rights):
 
 ```ts
 const HIERARCHY: Record<string, string[]> = {
