@@ -16,14 +16,14 @@ export type ProtectedRouteObject<TUser = unknown> = Omit<RouteObject, 'children'
 
 export type CreateRouterGuardOptions<TUser = unknown> = GuardOptions<TUser>
 
-export type CreateGuardedRouterOptions = Parameters<typeof createBrowserRouter>[1]
+export type CreateAccessRouterOptions = Parameters<typeof createBrowserRouter>[1]
 
-export type GuardProviderProps<TUser = unknown> = GuardOptions<TUser> & {
+export type AccessProviderProps<TUser = unknown> = GuardOptions<TUser> & {
   children?: ReactNode
 }
 
-export type GuardRouteProps = RouteProtection & {
+export type AccessRouteProps = RouteProtection & {
   children?: ReactNode
 }
 
-export type GuardContextValue<TUser = unknown> = Guard<TUser>
+export type AccessContextValue<TUser = unknown> = Guard<TUser>

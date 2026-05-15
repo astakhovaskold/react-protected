@@ -1,12 +1,13 @@
-export { createGuardedRouter } from './createGuardedRouter'
-export { GuardProvider, useGuard } from './GuardProvider'
-export { GuardRoute } from './GuardRoute'
+export { createAccessRouter } from './createAccessRouter'
+export { AccessProvider, useAccess } from './AccessProvider'
+export { AccessRoute } from './AccessRoute'
+export { HasAccess, useHasAccess } from './HasAccess'
 export type {
-  CreateGuardedRouterOptions,
+  AccessContextValue,
+  AccessProviderProps,
+  AccessRouteProps,
+  CreateAccessRouterOptions,
   CreateRouterGuardOptions,
-  GuardContextValue,
-  GuardProviderProps,
-  GuardRouteProps,
   ProtectedRouteObject,
   RouteProtection,
 } from './types'

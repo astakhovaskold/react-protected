@@ -49,8 +49,8 @@ export async function createGuardedMemoryRouter<TUser>(
     }
   })
 
-  const { createGuardedRouter } = await import('../src/createGuardedRouter')
-  const router = createGuardedRouter(routes, options, routerOptions)
+  const { createAccessRouter } = await import('../src/createAccessRouter')
+  const router = createAccessRouter(routes, options, routerOptions)
 
   vi.doUnmock('react-router-dom')
 
@@ -76,9 +76,9 @@ export async function captureCreateGuardedRouterCall<TUser>(
     }
   })
 
-  const { createGuardedRouter } = await import('../src/createGuardedRouter')
+  const { createAccessRouter } = await import('../src/createAccessRouter')
 
-  createGuardedRouter(routes, options, routerOptions)
+  createAccessRouter(routes, options, routerOptions)
 
   vi.doUnmock('react-router-dom')
 

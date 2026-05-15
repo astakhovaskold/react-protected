@@ -1,16 +1,16 @@
 import { Navigate, useLocation } from 'react-router-dom'
 
-import { useGuard } from './GuardProvider'
-import type { GuardRouteProps } from './types'
+import { useAccess } from './AccessProvider'
+import type { AccessRouteProps } from './types'
 
-export function GuardRoute({
+export function AccessRoute({
   access,
   roles,
   permissions,
   meta,
   children,
-}: GuardRouteProps) {
-  const guard = useGuard()
+}: AccessRouteProps) {
+  const guard = useAccess()
   const location = useLocation()
   const currentPath = `${location.pathname}${location.search}${location.hash}`
   const result = guard.check(

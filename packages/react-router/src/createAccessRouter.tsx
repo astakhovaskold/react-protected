@@ -11,7 +11,7 @@ import {
 } from 'react-router-dom'
 
 import type {
-  CreateGuardedRouterOptions,
+  CreateAccessRouterOptions,
   CreateRouterGuardOptions,
   ProtectedRouteObject,
   RouteProtection,
@@ -182,10 +182,10 @@ function wrapLazyRoute<TUser>(
   }
 }
 
-export function createGuardedRouter<TUser = unknown>(
+export function createAccessRouter<TUser = unknown>(
   routes: Array<ProtectedRouteObject<TUser>>,
   options: CreateRouterGuardOptions<TUser>,
-  routerOptions?: CreateGuardedRouterOptions
+  routerOptions?: CreateAccessRouterOptions
 ): ReturnType<typeof createBrowserRouter> {
   const guard = createGuard(options)
 
