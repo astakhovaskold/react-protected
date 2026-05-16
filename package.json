@@ -1,6 +1,7 @@
 {
   "name": "react-protected",
   "version": "0.0.1-beta.2",
+  "private": true,
   "license": "MIT",
   "packageManager": "pnpm@9.7.1",
   "scripts": {
