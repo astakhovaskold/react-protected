@@ -1,6 +1,6 @@
 {
   "name": "@react-protected/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "Framework-agnostic route protection logic",
   "main": "./dist/index.cjs",
