@@ -26,7 +26,23 @@ const guard = createGuard({
 | `hasRole`         | `(user, roles) => boolean`       | `() => false`   | Role check for RBAC                                        |
 | `hasPermission`   | `(user, permissions) => boolean` | `() => false`   | Permission check for ABAC-style access                     |
 
-Navigation paths (`loginPath`, `forbiddenPath`, `defaultPath`) and `callbackUrlParam` are not part of core — they live in the adapter layer (`AccessProvider` / `createAccessRouter`).
+### Recommended semantics
+
+The library does not enforce a specific matching strategy — the semantics are entirely determined by your `hasRole` and `hasPermission` implementations. The convention used across all examples:
+
+| Callback          | Strategy | Rationale                                                                 |
+| ----------------- | -------- | ------------------------------------------------------------------------- |
+| `hasRole`         | OR       | Roles grant alternative paths — `admin` **or** `manager` may access       |
+| `hasPermission`   | AND      | Permissions accumulate — the user must hold **every** required one        |
+
+```ts
+hasRole: (user, roles) => roles.some((r) => user.roles.includes(r))
+hasPermission: (user, perms) => perms.every((p) => user.permissions.includes(p))
+```
+
+You can use different semantics if your domain requires it — the callbacks are yours to define.
+
+Navigation paths (`loginPath`, `forbiddenPath`, `defaultPath`) and `callbackUrlParam` are not part of core — they live in `@react-protected/react` (via `AccessProvider`) and `@react-protected/react-router` (via `createAccessRouter`).
 
 ## guard.check(config)
 

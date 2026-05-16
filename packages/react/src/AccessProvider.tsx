@@ -11,6 +11,7 @@ export function AccessProvider<TUser = unknown>({
   forbiddenPath = '/403',
   defaultPath = '/',
   callbackUrlParam,
+  shouldAddCallbackUrl,
   getUser,
   isAuthenticated,
   hasRole,
@@ -28,8 +29,9 @@ export function AccessProvider<TUser = unknown>({
       forbiddenPath,
       defaultPath,
       callbackUrlParam,
+      shouldAddCallbackUrl,
     }),
-    [guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam]
+    [guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam, shouldAddCallbackUrl]
   )
 
   return (

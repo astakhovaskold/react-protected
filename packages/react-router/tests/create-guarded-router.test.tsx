@@ -170,6 +170,53 @@ describe('createAccessRouter', () => {
     expect(result.headers.get('Location')).toBe('/login')
   })
 
+  it('omits callbackUrl in action redirect when shouldAddCallbackUrl returns false', async () => {
+    let capturedRoutes: Array<RouteObject> | undefined
+
+    vi.resetModules()
+    globalThis.Request = NativeRequest
+
+    vi.doMock('react-router-dom', async () => {
+      const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+      return {
+        ...actual,
+        createBrowserRouter: (guardedRoutes: Array<RouteObject>) => {
+          capturedRoutes = guardedRoutes
+          return { mocked: true }
+        },
+      }
+    })
+
+    const { createAccessRouter } = await import('../src/createAccessRouter')
+
+    createAccessRouter(
+      [
+        {
+          path: '/private',
+          access: 'authenticated',
+          action: async () => null,
+          element: <div>private</div>,
+        },
+      ],
+      { getUser: () => null, callbackUrlParam: 'next', shouldAddCallbackUrl: () => false }
+    )
+
+    vi.doUnmock('react-router-dom')
+
+    const action = capturedRoutes?.[0]?.action
+    if (typeof action !== 'function') throw new Error('Expected action to be function')
+
+    const result = await action({
+      request: new Request('https://example.test/private', { method: 'POST' }),
+      params: {},
+      context: undefined,
+    } as ActionFunctionArgs)
+
+    expect(result instanceof Response).toBe(true)
+    if (!(result instanceof Response)) throw new Error('Expected Response')
+    expect(result.headers.get('Location')).toBe('/login')
+  })
+
   it('appends callbackUrl in action redirect when callbackUrlParam is set', async () => {
     let capturedRoutes: Array<RouteObject> | undefined
 

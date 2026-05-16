@@ -26,7 +26,23 @@ const guard = createGuard({
 | `hasRole`         | `(user, roles) => boolean`       | `() => false`   | Проверка ролей (RBAC)                                    |
 | `hasPermission`   | `(user, permissions) => boolean` | `() => false`   | Проверка прав доступа (ABAC)                             |
 
-Пути для редиректов (`loginPath`, `forbiddenPath`, `defaultPath`) и `callbackUrlParam` не входят в ядро — они живут на уровне адаптера (`AccessProvider` / `createAccessRouter`).
+### Рекомендуемая семантика
+
+Библиотека не навязывает конкретную стратегию сопоставления — семантика полностью определяется твоими реализациями `hasRole` и `hasPermission`. Конвенция, которой следуют все примеры:
+
+| Колбэк            | Стратегия | Обоснование                                                                      |
+| ----------------- | --------- | -------------------------------------------------------------------------------- |
+| `hasRole`         | OR        | Роли дают альтернативный доступ — `admin` **или** `manager` могут зайти          |
+| `hasPermission`   | AND       | Права накапливаются — пользователь должен иметь **каждое** из требуемых          |
+
+```ts
+hasRole: (user, roles) => roles.some((r) => user.roles.includes(r))
+hasPermission: (user, perms) => perms.every((p) => user.permissions.includes(p))
+```
+
+При необходимости можно использовать другую семантику — колбэки полностью под твоим контролем.
+
+Пути для редиректов (`loginPath`, `forbiddenPath`, `defaultPath`) и `callbackUrlParam` не входят в ядро — они живут в `@react-protected/react` (через `AccessProvider`) и `@react-protected/react-router` (через `createAccessRouter`).
 
 ## guard.check(config)
 

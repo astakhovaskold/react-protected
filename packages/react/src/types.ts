@@ -8,6 +8,7 @@ export type NavigationConfig = {
   forbiddenPath?: string
   defaultPath?: string
   callbackUrlParam?: string
+  shouldAddCallbackUrl?: () => boolean
 }
 
 export type AccessContextValue<TUser = unknown> = {
@@ -16,6 +17,7 @@ export type AccessContextValue<TUser = unknown> = {
   forbiddenPath: string
   defaultPath: string
   callbackUrlParam?: string
+  shouldAddCallbackUrl?: () => boolean
 }
 
 export type AccessProviderProps<TUser = unknown> = GuardOptions<TUser> &

@@ -34,7 +34,7 @@
 - Intermediate React package with context, hooks, and UI guard component
 - React Router adapter for data routers (`createAccessRouter`) and JSX guards (`AccessRoute`)
 - RBAC via `hasRole`, ABAC via `hasPermission`, `guest-only` routes at the adapter level
-- Optional `callbackUrl` flow for returning users after login
+- Optional `callbackUrlParam` for redirecting users back to the page they tried to visit after login
 
 ## Packages
 
@@ -42,12 +42,42 @@
 | -------------------------------- | ------------------------------------------------------------------------ |
 | `@react-protected/core`          | Pure access-control logic — no React, no router, no redirects            |
 | `@react-protected/react`         | React context (`AccessProvider`), hooks, and `HasAccess` component       |
-| `@react-protected/react-router`  | Adapter for React Router: `createAccessRouter` and `AccessRoute`         |
+| `@react-protected/react-router`  | Adapter for React Router: `createAccessRouter` and `AccessRoute`. Includes everything from `@react-protected/react` |
 
 ## Roadmap
 
 - Add a TanStack Router adapter
 - Add a Wouter adapter
+- Add a `guard` field to route config — a custom function called after all standard checks (auth, roles, permissions), for business logic that cannot be expressed as a role or permission set alone:
+
+  ```ts
+  // Redirect to profile setup if email is missing
+  {
+    path: '/dashboard',
+    guard: ({ session }) => {
+      if (!session?.user.email) return { redirect: '/profile/setup' }
+    },
+  }
+
+  // Combine with standard permission check
+  {
+    path: '/reports',
+    permissions: ['reports:read'],
+    guard: ({ session }) => {
+      if (session?.user.subscriptionExpired) return { redirect: '/subscription/expired' }
+    },
+  }
+
+  // Route param ownership check
+  {
+    path: '/users/:userId/edit',
+    guard: ({ session, params }) => {
+      if (session?.user.role !== 'admin' && params.userId !== session?.user.id) return false
+    },
+  }
+  ```
+
+  Standard checks run first; if they produce a redirect, `guard` is not called. When all standard checks pass, `guard` runs and its result is the final decision (`true` / `false` / `undefined` to pass through / `{ redirect: string }`).  
 
 ## Installation
 
@@ -94,6 +124,7 @@ export const router = createAccessRouter(
     loginPath: '/login',
     forbiddenPath: '/403',
     defaultPath: '/dashboard',
+    callbackUrlParam: 'next',
   }
 )
 
@@ -115,6 +146,7 @@ const App = () => (
     loginPath="/login"
     forbiddenPath="/403"
     defaultPath="/dashboard"
+    callbackUrlParam="next"
   >
     <Routes>
       <Route path="/" element={<HomePage />} />

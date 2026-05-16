@@ -18,7 +18,7 @@ export const AccessRoute = memo(({
   meta,
   children,
 }: AccessRouteProps) => {
-  const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam } = useAccess()
+  const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam, shouldAddCallbackUrl } = useAccess()
   const location = useLocation()
 
   if (access === 'guest-only') {
@@ -33,7 +33,8 @@ export const AccessRoute = memo(({
   if (!result.allowed) {
     if (result.reason === 'unauthenticated') {
       const currentPath = `${location.pathname}${location.search}${location.hash}`
-      const redirectTo = callbackUrlParam
+      const addCallback = callbackUrlParam && (shouldAddCallbackUrl?.() ?? true)
+      const redirectTo = addCallback
         ? `${loginPath}?${callbackUrlParam}=${encodeURIComponent(currentPath)}`
         : loginPath
       return <Navigate to={redirectTo} replace />

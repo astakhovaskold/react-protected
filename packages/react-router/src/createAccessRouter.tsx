@@ -25,6 +25,7 @@ type RouterGuardContext<TUser> = {
   forbiddenPath: string
   defaultPath: string
   callbackUrlParam?: string
+  shouldAddCallbackUrl?: () => boolean
 }
 
 type GuardedElementProps<TUser> = RouterRouteConfig & {
@@ -35,6 +36,7 @@ type GuardedElementProps<TUser> = RouterRouteConfig & {
   forbiddenPath: string
   defaultPath: string
   callbackUrlParam?: string
+  shouldAddCallbackUrl?: () => boolean
 }
 
 type LazyRouteLoader = Record<string, (() => Promise<unknown>) | undefined>
@@ -45,10 +47,12 @@ function buildRedirect(
   loginPath: string,
   forbiddenPath: string,
   defaultPath: string,
-  callbackUrlParam?: string
+  callbackUrlParam?: string,
+  shouldAddCallbackUrl?: () => boolean
 ): string {
   if (reason === 'unauthenticated') {
-    return callbackUrlParam
+    const addCallback = callbackUrlParam && (shouldAddCallbackUrl?.() ?? true)
+    return addCallback
       ? `${loginPath}?${callbackUrlParam}=${encodeURIComponent(currentPath)}`
       : loginPath
   }
@@ -68,6 +72,7 @@ function GuardedElement<TUser>({
   forbiddenPath,
   defaultPath,
   callbackUrlParam,
+  shouldAddCallbackUrl,
 }: GuardedElementProps<TUser>) {
   const location = useLocation()
   const currentPath = `${location.pathname}${location.search}${location.hash}`
@@ -90,7 +95,8 @@ function GuardedElement<TUser>({
       loginPath,
       forbiddenPath,
       defaultPath,
-      callbackUrlParam
+      callbackUrlParam,
+      shouldAddCallbackUrl
     )
     return <Navigate to={redirectTo} replace />
   }
@@ -114,6 +120,7 @@ function wrapGuardedElement<TUser>(ctx: RouterGuardContext<TUser>, element?: Rea
       forbiddenPath={ctx.forbiddenPath}
       defaultPath={ctx.defaultPath}
       callbackUrlParam={ctx.callbackUrlParam}
+      shouldAddCallbackUrl={ctx.shouldAddCallbackUrl}
     />
   )
 }
@@ -144,7 +151,8 @@ function wrapDataFunction<TUser, TArgs extends { request: Request }, TResult>(
         ctx.loginPath,
         ctx.forbiddenPath,
         ctx.defaultPath,
-        ctx.callbackUrlParam
+        ctx.callbackUrlParam,
+        ctx.shouldAddCallbackUrl
       )
       return redirect(redirectTo) as TResult
     }
@@ -209,6 +217,7 @@ export function createAccessRouter<TUser = unknown>(
     forbiddenPath = '/403',
     defaultPath = '/',
     callbackUrlParam,
+    shouldAddCallbackUrl,
     ...guardOptions
   } = options
 
@@ -244,6 +253,7 @@ export function createAccessRouter<TUser = unknown>(
         forbiddenPath,
         defaultPath,
         callbackUrlParam,
+        shouldAddCallbackUrl,
       }
 
       const guardedElement =

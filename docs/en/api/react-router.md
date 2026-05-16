@@ -35,12 +35,13 @@ import { AccessProvider } from '@react-protected/react-router'
 
 **Navigation config** (used by adapters for redirects):
 
-| Prop               | Type     | Default      | Description                                            |
-| ------------------ | -------- | ------------ | ------------------------------------------------------ |
-| `loginPath`        | `string` | `'/login'`   | Where unauthenticated users are redirected             |
-| `forbiddenPath`    | `string` | `'/403'`     | Where users without the required role/permission go    |
-| `defaultPath`      | `string` | `'/'`        | Where authenticated users go from `guest-only` routes  |
-| `callbackUrlParam` | `string` | —            | If set, appends the current path as a query param on login redirect |
+| Prop                    | Type            | Default      | Description                                                                         |
+| ----------------------- | --------------- | ------------ | ----------------------------------------------------------------------------------- |
+| `loginPath`             | `string`        | `'/login'`   | Where unauthenticated users are redirected                                          |
+| `forbiddenPath`         | `string`        | `'/403'`     | Where users without the required role/permission go                                 |
+| `defaultPath`           | `string`        | `'/'`        | Where authenticated users go from `guest-only` routes                               |
+| `callbackUrlParam`      | `string`        | —            | If set, appends the current path as a query param on login redirect                 |
+| `shouldAddCallbackUrl`  | `() => boolean` | `() => true` | Called on each unauthenticated redirect to decide whether to append the callback URL |
 
 `AccessProvider` is declarative: when its props change, descendants receive a fresh guard with updated options.
 
@@ -155,7 +156,7 @@ Returns the full context value including the guard and navigation config.
 ```tsx
 import { useAccess } from '@react-protected/react-router'
 
-const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam } = useAccess<User>()
+const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam, shouldAddCallbackUrl } = useAccess<User>()
 const result = guard.check({ roles: ['admin'] })
 ```
 
@@ -194,7 +195,7 @@ import { HasAccess } from '@react-protected/react-router'
 </HasAccess>
 ```
 
-## callbackUrl flow
+## Callback URL flow
 
 When `callbackUrlParam` is set, unauthenticated redirects include the current path:
 
@@ -209,3 +210,22 @@ const [params] = useSearchParams()
 const callbackUrl = params.get('next')
 navigate(callbackUrl ?? '/dashboard', { replace: true })
 ```
+
+### Conditional callback URL
+
+`shouldAddCallbackUrl` lets you suppress the callback URL at runtime without removing `callbackUrlParam`. It is called on every unauthenticated redirect:
+
+```tsx
+<AccessProvider
+  callbackUrlParam="next"
+  shouldAddCallbackUrl={() => !authStore.getState().loggedOut}
+  ...
+>
+```
+
+| Scenario                          | Result                                 |
+| --------------------------------- | -------------------------------------- |
+| Session expired (normal timeout)  | `/login?next=%2Fdashboard` — user returns to where they were |
+| User explicitly logged out        | `/login` — no callback URL, clean start |
+
+When `shouldAddCallbackUrl` is not provided, the callback URL is always appended (existing behavior).
