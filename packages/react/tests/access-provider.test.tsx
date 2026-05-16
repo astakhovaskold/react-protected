@@ -27,6 +27,8 @@ describe('AccessProvider', () => {
       return null
     }
 
+    const shouldAddCallbackUrl = () => true
+
     renderToString(
       <AccessProvider
         getUser={() => ({ role: 'admin' })}
@@ -35,6 +37,7 @@ describe('AccessProvider', () => {
         forbiddenPath="/no-access"
         defaultPath="/home"
         callbackUrlParam="next"
+        shouldAddCallbackUrl={shouldAddCallbackUrl}
       >
         <Consumer />
       </AccessProvider>
@@ -44,6 +47,7 @@ describe('AccessProvider', () => {
     expect(ctx?.forbiddenPath).toBe('/no-access')
     expect(ctx?.defaultPath).toBe('/home')
     expect(ctx?.callbackUrlParam).toBe('next')
+    expect(ctx?.shouldAddCallbackUrl).toBe(shouldAddCallbackUrl)
     expect(ctx?.guard.check({ roles: ['admin'] })).toEqual({ allowed: true })
   })
 

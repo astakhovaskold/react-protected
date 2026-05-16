@@ -108,6 +108,75 @@ describe('AccessRoute', () => {
     )
   })
 
+  it('omits callbackUrl when shouldAddCallbackUrl returns false', () => {
+    function LoginPage() {
+      const location = useLocation()
+      return (
+        <div data-testid="login">
+          {location.pathname}
+          {location.search}
+        </div>
+      )
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/private']}>
+        <AccessProvider
+          getUser={() => null}
+          callbackUrlParam="next"
+          shouldAddCallbackUrl={() => false}
+        >
+          <Routes>
+            <Route
+              path="/private"
+              element={
+                <AccessRoute access="authenticated">
+                  <div>private</div>
+                </AccessRoute>
+              }
+            />
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </AccessProvider>
+      </MemoryRouter>
+    )
+    expect(screen.getByTestId('login').textContent).toBe('/login')
+  })
+
+  it('appends callbackUrl when shouldAddCallbackUrl returns true', () => {
+    function LoginPage() {
+      const location = useLocation()
+      return (
+        <div data-testid="callback">
+          {new URLSearchParams(location.search).get('next')}
+        </div>
+      )
+    }
+
+    render(
+      <MemoryRouter initialEntries={['/private']}>
+        <AccessProvider
+          getUser={() => null}
+          callbackUrlParam="next"
+          shouldAddCallbackUrl={() => true}
+        >
+          <Routes>
+            <Route
+              path="/private"
+              element={
+                <AccessRoute access="authenticated">
+                  <div>private</div>
+                </AccessRoute>
+              }
+            />
+            <Route path="/login" element={<LoginPage />} />
+          </Routes>
+        </AccessProvider>
+      </MemoryRouter>
+    )
+    expect(screen.getByTestId('callback').textContent).toBe('/private')
+  })
+
   it('redirects authenticated user away from guest-only route', () => {
     render(
       <MemoryRouter initialEntries={['/login']}>

@@ -35,12 +35,13 @@ import { AccessProvider } from '@react-protected/react-router'
 
 **Конфигурация навигации** (используется адаптером для редиректов):
 
-| Prop               | Тип      | Default      | Описание                                                              |
-| ------------------ | -------- | ------------ | --------------------------------------------------------------------- |
-| `loginPath`        | `string` | `'/login'`   | Куда перенаправлять незалогиненных пользователей                      |
-| `forbiddenPath`    | `string` | `'/403'`     | Куда перенаправлять при нехватке прав                                 |
-| `defaultPath`      | `string` | `'/'`        | Куда перенаправлять залогиненных с `guest-only` маршрутов             |
-| `callbackUrlParam` | `string` | —            | Если указан, добавляет текущий путь как query-параметр при редиректе на логин |
+| Prop                    | Тип             | Default      | Описание                                                                                      |
+| ----------------------- | --------------- | ------------ | --------------------------------------------------------------------------------------------- |
+| `loginPath`             | `string`        | `'/login'`   | Куда перенаправлять незалогиненных пользователей                                              |
+| `forbiddenPath`         | `string`        | `'/403'`     | Куда перенаправлять при нехватке прав                                                         |
+| `defaultPath`           | `string`        | `'/'`        | Куда перенаправлять залогиненных с `guest-only` маршрутов                                     |
+| `callbackUrlParam`      | `string`        | —            | Если указан, добавляет текущий путь как query-параметр при редиректе на логин                 |
+| `shouldAddCallbackUrl`  | `() => boolean` | `() => true` | Вызывается при каждом редиректе незалогиненного — решает, добавлять ли callback URL           |
 
 `AccessProvider` декларативный: при изменении props потомки получают новый guard с актуальными опциями.
 
@@ -155,7 +156,7 @@ type ProtectedRouteObject = RouteObject & {
 ```tsx
 import { useAccess } from '@react-protected/react-router'
 
-const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam } = useAccess<User>()
+const { guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam, shouldAddCallbackUrl } = useAccess<User>()
 const result = guard.check({ roles: ['admin'] })
 ```
 
@@ -194,7 +195,7 @@ import { HasAccess } from '@react-protected/react-router'
 </HasAccess>
 ```
 
-## Поток callbackUrl
+## Callback URL flow
 
 Если указан `callbackUrlParam`, редирект незалогиненного включает текущий путь:
 
@@ -209,3 +210,22 @@ const [params] = useSearchParams()
 const callbackUrl = params.get('next')
 navigate(callbackUrl ?? '/dashboard', { replace: true })
 ```
+
+### Условный callback URL
+
+`shouldAddCallbackUrl` позволяет отключить добавление callback URL в рантайме, не убирая `callbackUrlParam`. Вызывается при каждом редиректе незалогиненного:
+
+```tsx
+<AccessProvider
+  callbackUrlParam="next"
+  shouldAddCallbackUrl={() => !authStore.getState().loggedOut}
+  ...
+>
+```
+
+| Сценарий                         | Результат                                                      |
+| -------------------------------- | -------------------------------------------------------------- |
+| Сессия истекла (обычный таймаут) | `/login?next=%2Fdashboard` — пользователь вернётся куда шёл   |
+| Явный выход из системы           | `/login` — без callback URL, чистый старт                      |
+
+Если `shouldAddCallbackUrl` не передан, callback URL добавляется всегда (поведение не меняется).
