@@ -1,18 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { vi } from 'vitest'
 
-import type { ProtectedRouteObject } from '../src/types'
-
-export type GuardOptions<TUser> = {
-  getUser: () => TUser | null
-  isAuthenticated?: (user: TUser | null) => boolean
-  hasRole?: (user: TUser, roles: Array<string>) => boolean
-  hasPermission?: (user: TUser, permissions: Array<string>) => boolean
-  loginPath?: string
-  forbiddenPath?: string
-  defaultPath?: string
-  callbackUrlParam?: string
-}
+import type { CreateAccessRouterConfig,ProtectedRouteObject  } from '../src/types'
 
 export const NativeRequest = globalThis.Request
 
@@ -22,9 +11,9 @@ export class TestRequest extends NativeRequest {
   }
 }
 
-export async function createGuardedMemoryRouter<TUser>(
+export async function createAccessMemoryRouter<TUser>(
   routes: Array<ProtectedRouteObject<TUser>>,
-  options: GuardOptions<TUser>,
+  options: CreateAccessRouterConfig<TUser>,
   initialEntries: Array<string>,
   routerOptions?: { basename?: string; future?: Record<string, unknown> }
 ) {
@@ -49,17 +38,17 @@ export async function createGuardedMemoryRouter<TUser>(
     }
   })
 
-  const { createGuardedRouter } = await import('../src/createGuardedRouter')
-  const router = createGuardedRouter(routes, options, routerOptions)
+  const { createAccessRouter } = await import('../src/createAccessRouter')
+  const router = createAccessRouter(routes, options, routerOptions)
 
   vi.doUnmock('react-router-dom')
 
   return router
 }
 
-export async function captureCreateGuardedRouterCall<TUser>(
+export async function captureCreateAccessRouterCall<TUser>(
   routes: Array<ProtectedRouteObject<TUser>>,
-  options: GuardOptions<TUser>,
+  options: CreateAccessRouterConfig<TUser>,
   routerOptions?: { basename?: string; future?: Record<string, unknown> }
 ) {
   vi.resetModules()
@@ -76,9 +65,9 @@ export async function captureCreateGuardedRouterCall<TUser>(
     }
   })
 
-  const { createGuardedRouter } = await import('../src/createGuardedRouter')
+  const { createAccessRouter } = await import('../src/createAccessRouter')
 
-  createGuardedRouter(routes, options, routerOptions)
+  createAccessRouter(routes, options, routerOptions)
 
   vi.doUnmock('react-router-dom')
 

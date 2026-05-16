@@ -1,0 +1,131 @@
+/* @vitest-environment jsdom */
+
+import { cleanup, render, renderHook, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { AccessProvider } from '../src/AccessProvider'
+import { HasAccess, useHasAccess } from '../src/HasAccess'
+
+type TestUser = { roles: Array<string>; permissions: Array<string> }
+
+function Wrapper({ user, children }: { user: unknown; children: React.ReactNode }) {
+  return (
+    <AccessProvider<TestUser>
+      getUser={() => user as TestUser | null}
+      hasRole={(u, roles) => roles.some((r) => u.roles.includes(r))}
+      hasPermission={(u, perms) => perms.every((p) => u.permissions.includes(p))}
+    >
+      {children}
+    </AccessProvider>
+  )
+}
+
+describe('useHasAccess', () => {
+  afterEach(cleanup)
+
+  it('returns true for authenticated user', () => {
+    const { result } = renderHook(() => useHasAccess({ access: 'authenticated' }), {
+      wrapper: ({ children }) => (
+        <Wrapper user={{ roles: [], permissions: [] }}>{children}</Wrapper>
+      ),
+    })
+    expect(result.current).toBe(true)
+  })
+
+  it('returns false for unauthenticated user on protected route', () => {
+    const { result } = renderHook(() => useHasAccess({ access: 'authenticated' }), {
+      wrapper: ({ children }) => <Wrapper user={null}>{children}</Wrapper>,
+    })
+    expect(result.current).toBe(false)
+  })
+
+  it('returns true when user has required role', () => {
+    const { result } = renderHook(() => useHasAccess({ roles: ['admin'] }), {
+      wrapper: ({ children }) => (
+        <Wrapper user={{ roles: ['admin'], permissions: [] }}>{children}</Wrapper>
+      ),
+    })
+    expect(result.current).toBe(true)
+  })
+
+  it('returns false when user lacks required role', () => {
+    const { result } = renderHook(() => useHasAccess({ roles: ['admin'] }), {
+      wrapper: ({ children }) => (
+        <Wrapper user={{ roles: ['member'], permissions: [] }}>{children}</Wrapper>
+      ),
+    })
+    expect(result.current).toBe(false)
+  })
+
+  it('returns true when user has all required permissions', () => {
+    const { result } = renderHook(
+      () => useHasAccess({ permissions: ['reports:read'] }),
+      {
+        wrapper: ({ children }) => (
+          <Wrapper user={{ roles: [], permissions: ['reports:read'] }}>{children}</Wrapper>
+        ),
+      }
+    )
+    expect(result.current).toBe(true)
+  })
+
+  it('returns false when user lacks required permissions', () => {
+    const { result } = renderHook(
+      () => useHasAccess({ permissions: ['reports:write'] }),
+      {
+        wrapper: ({ children }) => (
+          <Wrapper user={{ roles: [], permissions: ['reports:read'] }}>{children}</Wrapper>
+        ),
+      }
+    )
+    expect(result.current).toBe(false)
+  })
+})
+
+describe('HasAccess', () => {
+  afterEach(cleanup)
+
+  it('renders children when access is allowed', () => {
+    render(
+      <Wrapper user={{ roles: ['admin'], permissions: [] }}>
+        <HasAccess roles={['admin']}>
+          <button type="button">Delete</button>
+        </HasAccess>
+      </Wrapper>
+    )
+    expect(screen.getByText('Delete')).toBeTruthy()
+  })
+
+  it('renders nothing when access is denied', () => {
+    render(
+      <Wrapper user={{ roles: ['member'], permissions: [] }}>
+        <HasAccess roles={['admin']}>
+          <button type="button">Delete</button>
+        </HasAccess>
+      </Wrapper>
+    )
+    expect(screen.queryByText('Delete')).toBeNull()
+  })
+
+  it('renders nothing for unauthenticated user on authenticated content', () => {
+    render(
+      <Wrapper user={null}>
+        <HasAccess access="authenticated">
+          <span>secret</span>
+        </HasAccess>
+      </Wrapper>
+    )
+    expect(screen.queryByText('secret')).toBeNull()
+  })
+
+  it('renders children when no restrictions are set', () => {
+    render(
+      <Wrapper user={null}>
+        <HasAccess>
+          <span>public</span>
+        </HasAccess>
+      </Wrapper>
+    )
+    expect(screen.getByText('public')).toBeTruthy()
+  })
+})

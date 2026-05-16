@@ -12,6 +12,7 @@
     "baseUrl": ".",
     "paths": {
       "@react-protected/core": ["packages/core/src/index.ts"],
+      "@react-protected/react": ["packages/react/src/index.ts"],
       "@react-protected/react-router": ["packages/react-router/src/index.ts"]
     }
   },

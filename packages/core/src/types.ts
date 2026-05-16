@@ -1,51 +1,25 @@
-// Тип доступа к маршруту
-export type RouteAccess = 'public' | 'authenticated' | 'guest-only'
+export type AccessLevel = 'public' | 'authenticated'
 
-// Конфиг одного маршрута
-export type RouteConfig = {
-  path: string
-  access?: RouteAccess // по умолчанию 'public'
-  roles?: Array<string> // RBAC: список допустимых ролей
-  permissions?: Array<string> // ABAC: список допустимых прав
-  meta?: Record<string, unknown> // произвольные данные для кастомной логики
+export type AccessConfig = {
+  access?: AccessLevel
+  roles?: Array<string>
+  permissions?: Array<string>
+  meta?: Record<string, unknown>
 }
 
-// Результат проверки доступа
 export type AccessResult =
   | { allowed: true }
-  | { allowed: false; reason: 'unauthenticated'; redirectTo: string }
-  | { allowed: false; reason: 'forbidden'; redirectTo: string }
-  | { allowed: false; reason: 'guest-only'; redirectTo: string }
+  | { allowed: false; reason: 'unauthenticated' }
+  | { allowed: false; reason: 'forbidden' }
 
-// Опции для createGuard
 export type GuardOptions<TUser = unknown> = {
-  // Как получить текущего пользователя (синхронно)
   getUser: () => TUser | null
-
-  // Считать ли пользователя аутентифицированным
   isAuthenticated?: (user: TUser | null) => boolean
-
-  // Проверка ролей
   hasRole?: (user: TUser, roles: Array<string>) => boolean
-
-  // Проверка прав (ABAC)
   hasPermission?: (user: TUser, permissions: Array<string>) => boolean
-
-  // Куда редиректить если не залогинен (default: '/login')
-  loginPath?: string
-
-  // Куда редиректить если залогинен но нет доступа (default: '/403')
-  forbiddenPath?: string
-
-  // Куда редиректить залогиненного с guest-only маршрута (default: '/')
-  defaultPath?: string
-
-  // Параметр callbackUrl в query string (default: 'callbackUrl')
-  callbackUrlParam?: string
 }
 
-// Публичный интерфейс guard-а
 export type Guard<TUser = unknown> = {
-  check: (route: RouteConfig, currentPath: string) => AccessResult
+  check: (config: AccessConfig) => AccessResult
   options: Required<GuardOptions<TUser>>
 }

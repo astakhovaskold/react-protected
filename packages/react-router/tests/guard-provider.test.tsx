@@ -1,243 +1,220 @@
 /* @vitest-environment jsdom */
 
-import { cleanup, render, screen } from '@testing-library/react'
-import { renderToString } from 'react-dom/server'
+import { AccessProvider } from '@react-protected/react'
+import { cleanup, render, renderHook,screen  } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { GuardProvider, useGuard } from '../src/GuardProvider'
-import { GuardRoute } from '../src/GuardRoute'
-import type { GuardContextValue } from '../src/types'
+import { AccessRoute, useRouteAccess } from '../src/AccessRoute'
 
-describe('GuardProvider', () => {
-  afterEach(() => {
-    cleanup()
-  })
-
-  it('throws when useGuard is called outside the provider', () => {
-    function Consumer() {
-      useGuard()
-      return null
-    }
-
-    expect(() => renderToString(<Consumer />)).toThrowError(
-      'useGuard must be used within <GuardProvider>'
-    )
-  })
-
-  it('provides a guard instance to descendants', () => {
-    let guard: GuardContextValue<{ role: string }> | undefined
-
-    function Consumer() {
-      guard = useGuard<{ role: string }>()
-      return null
-    }
-
-    renderToString(
-      <GuardProvider
-        getUser={() => ({ role: 'admin' })}
-        hasRole={(user, roles) => roles.includes(user.role)}
-      >
-        <Consumer />
-      </GuardProvider>
-    )
-
-    expect(guard).toBeDefined()
-    expect(guard?.check({ path: '/admin', roles: ['admin'] }, '/admin')).toEqual({
-      allowed: true,
-    })
-  })
-
-  it('updates route redirects when provider props change', () => {
-    function LoginPage() {
-      const location = useLocation()
-      return <div data-testid="pathname">{location.pathname}</div>
-    }
-
-    const { rerender } = render(
-      <MemoryRouter key="login" initialEntries={['/private']}>
-        <GuardProvider getUser={() => null} loginPath="/login">
-          <Routes>
-            <Route
-              path="/private"
-              element={
-                <GuardRoute access="authenticated">
-                  <div>private page</div>
-                </GuardRoute>
-              }
-            />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signin" element={<LoginPage />} />
-          </Routes>
-        </GuardProvider>
-      </MemoryRouter>
-    )
-
-    expect(screen.getByTestId('pathname').textContent).toBe('/login')
-
-    rerender(
-      <MemoryRouter key="signin" initialEntries={['/private']}>
-        <GuardProvider getUser={() => null} loginPath="/signin">
-          <Routes>
-            <Route
-              path="/private"
-              element={
-                <GuardRoute access="authenticated">
-                  <div>private page</div>
-                </GuardRoute>
-              }
-            />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signin" element={<LoginPage />} />
-          </Routes>
-        </GuardProvider>
-      </MemoryRouter>
-    )
-
-    expect(screen.getByTestId('pathname').textContent).toBe('/signin')
-  })
-})
-
-describe('GuardRoute', () => {
-  afterEach(() => {
-    cleanup()
-  })
+describe('AccessRoute', () => {
+  afterEach(cleanup)
 
   it('renders children when access is allowed', () => {
     render(
       <MemoryRouter initialEntries={['/dashboard']}>
-        <GuardProvider
+        <AccessProvider
           getUser={() => ({ role: 'admin', permissions: ['reports:read'] })}
           hasRole={(user, roles) => roles.includes(user.role)}
           hasPermission={(user, permissions) =>
-            permissions.every((permission) => user.permissions.includes(permission))
+            permissions.every((p) => user.permissions.includes(p))
           }
         >
           <Routes>
             <Route
               path="/dashboard"
               element={
-                <GuardRoute
+                <AccessRoute
                   access="authenticated"
                   roles={['admin']}
                   permissions={['reports:read']}
                 >
                   <div>dashboard</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
-
     expect(screen.getByText('dashboard')).toBeTruthy()
   })
 
-  it('redirects unauthenticated users to login with callbackUrl', () => {
+  it('renders Outlet when no children provided (layout guard pattern)', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <AccessProvider getUser={() => ({ id: 1 })}>
+          <Routes>
+            <Route path="/dashboard" element={<AccessRoute access="authenticated" />}>
+              <Route index element={<div>outlet content</div>} />
+            </Route>
+          </Routes>
+        </AccessProvider>
+      </MemoryRouter>
+    )
+    expect(screen.getByText('outlet content')).toBeTruthy()
+  })
+
+  it('redirects unauthenticated user to loginPath', () => {
+    render(
+      <MemoryRouter initialEntries={['/private']}>
+        <AccessProvider getUser={() => null} loginPath="/login">
+          <Routes>
+            <Route
+              path="/private"
+              element={
+                <AccessRoute access="authenticated">
+                  <div>private</div>
+                </AccessRoute>
+              }
+            />
+            <Route path="/login" element={<div data-testid="login" />} />
+          </Routes>
+        </AccessProvider>
+      </MemoryRouter>
+    )
+    expect(screen.getByTestId('login')).toBeTruthy()
+  })
+
+  it('appends callbackUrl when callbackUrlParam is configured', () => {
     function LoginPage() {
       const location = useLocation()
       return (
-        <div data-testid="callback-url">
-          {new URLSearchParams(location.search).get('callbackUrl')}
+        <div data-testid="callback">
+          {new URLSearchParams(location.search).get('next')}
         </div>
       )
     }
 
     render(
       <MemoryRouter initialEntries={['/private?tab=overview#section']}>
-        <GuardProvider getUser={() => null}>
+        <AccessProvider getUser={() => null} callbackUrlParam="next">
           <Routes>
             <Route
               path="/private"
               element={
-                <GuardRoute access="authenticated">
+                <AccessRoute access="authenticated">
                   <div>private</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
-
-    expect(screen.getByTestId('callback-url').textContent).toBe(
+    expect(screen.getByTestId('callback').textContent).toBe(
       '/private?tab=overview#section'
     )
   })
 
-  it('redirects authenticated users away from guest-only routes', () => {
+  it('redirects authenticated user away from guest-only route', () => {
     render(
       <MemoryRouter initialEntries={['/login']}>
-        <GuardProvider getUser={() => ({ role: 'member' })}>
+        <AccessProvider getUser={() => ({ role: 'member' })} defaultPath="/home">
           <Routes>
             <Route
               path="/login"
               element={
-                <GuardRoute access="guest-only">
+                <AccessRoute access="guest-only">
                   <div>guest page</div>
-                </GuardRoute>
+                </AccessRoute>
               }
             />
-            <Route path="/" element={<div>home page</div>} />
+            <Route path="/home" element={<div>home page</div>} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
-
     expect(screen.getByText('home page')).toBeTruthy()
   })
 
-  it('redirects users without required roles to forbidden path', () => {
+  it('redirects user without required role to forbiddenPath', () => {
     render(
       <MemoryRouter initialEntries={['/admin']}>
-        <GuardProvider
-          getUser={() => ({ role: 'member', permissions: ['reports:read'] })}
+        <AccessProvider
+          getUser={() => ({ role: 'member' })}
           hasRole={(user, roles) => roles.includes(user.role)}
+          forbiddenPath="/403"
         >
           <Routes>
             <Route
               path="/admin"
               element={
-                <GuardRoute roles={['admin']}>
-                  <div>admin page</div>
-                </GuardRoute>
+                <AccessRoute roles={['admin']}>
+                  <div>admin</div>
+                </AccessRoute>
               }
             />
-            <Route path="/403" element={<div>forbidden page</div>} />
+            <Route path="/403" element={<div>forbidden</div>} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
-
-    expect(screen.getByText('forbidden page')).toBeTruthy()
+    expect(screen.getByText('forbidden')).toBeTruthy()
   })
 
-  it('redirects users without required permissions to forbidden path', () => {
-    render(
-      <MemoryRouter initialEntries={['/reports']}>
-        <GuardProvider
-          getUser={() => ({ role: 'admin', permissions: ['profile:read'] })}
-          hasPermission={(user, permissions) =>
-            permissions.every((permission) => user.permissions.includes(permission))
-          }
-        >
+  it('updates redirect path when provider loginPath changes', () => {
+    function LoginPage() {
+      return <div data-testid="login-path">{useLocation().pathname}</div>
+    }
+
+    const { rerender } = render(
+      <MemoryRouter key="a" initialEntries={['/private']}>
+        <AccessProvider getUser={() => null} loginPath="/login">
           <Routes>
             <Route
-              path="/reports"
+              path="/private"
               element={
-                <GuardRoute permissions={['reports:read']}>
-                  <div>reports page</div>
-                </GuardRoute>
+                <AccessRoute access="authenticated">
+                  <div>private</div>
+                </AccessRoute>
               }
             />
-            <Route path="/403" element={<div>forbidden page</div>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signin" element={<LoginPage />} />
           </Routes>
-        </GuardProvider>
+        </AccessProvider>
       </MemoryRouter>
     )
+    expect(screen.getByTestId('login-path').textContent).toBe('/login')
 
-    expect(screen.getByText('forbidden page')).toBeTruthy()
+    rerender(
+      <MemoryRouter key="b" initialEntries={['/private']}>
+        <AccessProvider getUser={() => null} loginPath="/signin">
+          <Routes>
+            <Route
+              path="/private"
+              element={
+                <AccessRoute access="authenticated">
+                  <div>private</div>
+                </AccessRoute>
+              }
+            />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signin" element={<LoginPage />} />
+          </Routes>
+        </AccessProvider>
+      </MemoryRouter>
+    )
+    expect(screen.getByTestId('login-path').textContent).toBe('/signin')
+  })
+})
+
+describe('useRouteAccess', () => {
+  afterEach(cleanup)
+
+  it('returns full AccessResult from guard.check()', () => {
+    const { result } = renderHook(
+      () => useRouteAccess({ access: 'authenticated' }),
+      {
+        wrapper: ({ children }) => (
+          <MemoryRouter>
+            <AccessProvider getUser={() => null}>{children}</AccessProvider>
+          </MemoryRouter>
+        ),
+      }
+    )
+    expect(result.current).toEqual({ allowed: false, reason: 'unauthenticated' })
   })
 })

@@ -1,14 +1,4 @@
-import type { AccessResult, Guard, GuardOptions, RouteConfig } from './types'
-
-function buildLoginRedirect(
-  loginPath: string,
-  callbackUrlParam: string,
-  currentPath: string
-): string {
-  const url = new URL(loginPath, 'https://react-protected.local')
-  url.searchParams.set(callbackUrlParam, currentPath)
-  return `${url.pathname}${url.search}${url.hash}`
-}
+import type { AccessConfig, AccessResult, Guard, GuardOptions } from './types'
 
 export function createGuard<TUser = unknown>(options: GuardOptions<TUser>): Guard<TUser> {
   const resolved = {
@@ -16,47 +6,30 @@ export function createGuard<TUser = unknown>(options: GuardOptions<TUser>): Guar
     isAuthenticated: options.isAuthenticated ?? ((user) => user !== null),
     hasRole: options.hasRole ?? (() => false),
     hasPermission: options.hasPermission ?? (() => false),
-    loginPath: options.loginPath ?? '/login',
-    forbiddenPath: options.forbiddenPath ?? '/403',
-    defaultPath: options.defaultPath ?? '/',
-    callbackUrlParam: options.callbackUrlParam ?? 'callbackUrl',
   } as Required<GuardOptions<TUser>>
 
-  const check = (route: RouteConfig, currentPath: string): AccessResult => {
+  const check = (config: AccessConfig): AccessResult => {
     const user = resolved.getUser()
     const authenticated = resolved.isAuthenticated(user)
-    const access = route.access ?? 'public'
+    const access = config.access ?? 'public'
     const requiresAuth =
       access === 'authenticated' ||
-      Boolean(route.roles?.length) ||
-      Boolean(route.permissions?.length)
+      Boolean(config.roles?.length) ||
+      Boolean(config.permissions?.length)
 
-    // guest-only: редиректим залогиненных
-    if (access === 'guest-only' && authenticated) {
-      return { allowed: false, reason: 'guest-only', redirectTo: resolved.defaultPath }
-    }
-
-    // authenticated / RBAC / ABAC: редиректим незалогиненных
     if (requiresAuth && !authenticated) {
-      const redirectTo = buildLoginRedirect(
-        resolved.loginPath,
-        resolved.callbackUrlParam,
-        currentPath
-      )
-      return { allowed: false, reason: 'unauthenticated', redirectTo }
+      return { allowed: false, reason: 'unauthenticated' }
     }
 
-    // RBAC: проверяем роли
-    if (route.roles?.length && user) {
-      if (!resolved.hasRole(user, route.roles)) {
-        return { allowed: false, reason: 'forbidden', redirectTo: resolved.forbiddenPath }
+    if (config.roles?.length && user) {
+      if (!resolved.hasRole(user, config.roles)) {
+        return { allowed: false, reason: 'forbidden' }
       }
     }
 
-    // ABAC: проверяем права
-    if (route.permissions?.length && user) {
-      if (!resolved.hasPermission(user, route.permissions)) {
-        return { allowed: false, reason: 'forbidden', redirectTo: resolved.forbiddenPath }
+    if (config.permissions?.length && user) {
+      if (!resolved.hasPermission(user, config.permissions)) {
+        return { allowed: false, reason: 'forbidden' }
       }
     }
 

@@ -10,7 +10,9 @@ type User = {
 
 ```ts
 // router.ts
-export const router = createGuardedRouter(
+import { createAccessRouter } from '@react-protected/react-router'
+
+export const router = createAccessRouter(
   [
     { path: '/login',     element: <LoginPage />,     access: 'guest-only' },
     { path: '/dashboard', element: <DashboardPage />, access: 'authenticated' },
@@ -24,16 +26,15 @@ export const router = createGuardedRouter(
       path: '/reports',
       element: <ReportsPage />,
       access: 'authenticated',
-      roles: ['admin', 'manager'], // admin или manager
+      roles: ['admin', 'manager'], // admin ИЛИ manager
     },
     { path: '/403', element: <Page403 /> },
   ],
   {
     getUser: () => useAuthStore.getState().user,
 
-    // Ты сам определяешь логику — любая OR, AND, иерархия
-    hasRole: (user: User, roles) =>
-      roles.some((r) => user.roles.includes(r)),
+    // Ты сам определяешь логику — здесь OR-семантика
+    hasRole: (user: User, roles) => roles.some((r) => user.roles.includes(r)),
 
     loginPath: '/login',
     forbiddenPath: '/403',
@@ -41,9 +42,29 @@ export const router = createGuardedRouter(
 )
 ```
 
+## Защита UI-элементов
+
+Используй `HasAccess` или `useHasAccess`, чтобы скрывать элементы по ролям — без смены маршрута:
+
+```tsx
+import { HasAccess } from '@react-protected/react-router'
+
+const Toolbar = () => (
+  <nav>
+    <HasAccess roles={['admin']}>
+      <button>Удалить пользователя</button>
+    </HasAccess>
+
+    <HasAccess roles={['admin', 'manager']}>
+      <button>Экспорт отчёта</button>
+    </HasAccess>
+  </nav>
+)
+```
+
 ## Иерархия ролей
 
-Если у тебя иерархия (admin включает manager, manager включает viewer):
+Если у тебя иерархия (admin включает права manager, manager включает права viewer):
 
 ```ts
 const HIERARCHY: Record<string, string[]> = {
