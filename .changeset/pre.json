@@ -6,5 +6,7 @@
     "@react-protected/react": "0.1.0",
     "@react-protected/react-router": "0.1.0"
   },
-  "changesets": []
+  "changesets": [
+    "ten-kings-grow"
+  ]
 }
