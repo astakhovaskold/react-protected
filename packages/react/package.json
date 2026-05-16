@@ -1,6 +1,6 @@
 {
   "name": "@react-protected/react",
-  "version": "0.1.1-beta.0",
+  "version": "0.1.1-beta.1",
   "license": "MIT",
   "description": "React context and hooks for react-protected",
   "main": "./dist/index.cjs",

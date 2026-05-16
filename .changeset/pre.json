@@ -7,6 +7,7 @@
     "@react-protected/react-router": "0.1.0"
   },
   "changesets": [
+    "lemon-rice-create",
     "ten-kings-grow"
   ]
 }
