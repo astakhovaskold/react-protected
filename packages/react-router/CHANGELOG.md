@@ -1,5 +1,17 @@
 # @react-protected/react-router
 
+## 0.2.0-beta.2
+
+### Minor Changes
+
+- 05cda4d: Update roadmap and docs
+
+### Patch Changes
+
+- Updated dependencies [05cda4d]
+  - @react-protected/react@0.2.0-beta.2
+  - @react-protected/core@0.2.0-beta.2
+
 ## 0.1.1-beta.1
 
 ### Patch Changes
