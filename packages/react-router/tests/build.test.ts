@@ -21,6 +21,9 @@ describe('package build', () => {
       access(join(distDir, 'index.js')),
       access(join(distDir, 'index.cjs')),
       access(join(distDir, 'index.d.ts')),
+      access(join(distDir, 'testing.js')),
+      access(join(distDir, 'testing.cjs')),
+      access(join(distDir, 'testing.d.ts')),
     ])
   })
 })

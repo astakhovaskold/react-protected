@@ -119,6 +119,38 @@ describe('createAccessRouter', () => {
     router.dispose()
   })
 
+  it('does not execute nested child loader when parent access is denied', async () => {
+    let childLoaderCalls = 0
+
+    const router = await createAccessMemoryRouter(
+      [
+        {
+          path: '/private',
+          access: 'authenticated',
+          element: null,
+          children: [
+            {
+              index: true,
+              loader: () => {
+                childLoaderCalls += 1
+                return null
+              },
+              element: <div>private child</div>,
+            },
+          ],
+        },
+        { path: '/login', element: <div>login page</div> },
+      ],
+      { getUser: () => null },
+      ['/private']
+    )
+
+    render(<RouterProvider router={router} />)
+    expect(await screen.findByText('login page')).toBeTruthy()
+    expect(childLoaderCalls).toBe(0)
+    router.dispose()
+  })
+
   it('does not execute action when access is denied, redirects to loginPath', async () => {
     let actionCalls = 0
     let capturedRoutes: Array<RouteObject> | undefined
@@ -164,6 +196,66 @@ describe('createAccessRouter', () => {
     } as ActionFunctionArgs)
 
     expect(actionCalls).toBe(0)
+    expect(result instanceof Response).toBe(true)
+    if (!(result instanceof Response)) throw new Error('Expected Response')
+    expect(result.status).toBe(302)
+    expect(result.headers.get('Location')).toBe('/login')
+  })
+
+  it('does not execute nested child action when parent access is denied', async () => {
+    let childActionCalls = 0
+    let capturedRoutes: Array<RouteObject> | undefined
+
+    vi.resetModules()
+    globalThis.Request = NativeRequest
+
+    vi.doMock('react-router-dom', async () => {
+      const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+      return {
+        ...actual,
+        createBrowserRouter: (guardedRoutes: Array<RouteObject>) => {
+          capturedRoutes = guardedRoutes
+          return { mocked: true }
+        },
+      }
+    })
+
+    const { createAccessRouter } = await import('../src/createAccessRouter')
+
+    createAccessRouter(
+      [
+        {
+          path: '/private',
+          access: 'authenticated',
+          element: null,
+          children: [
+            {
+              index: true,
+              action: async () => {
+                childActionCalls += 1
+                return null
+              },
+              element: <div>private child</div>,
+            },
+          ],
+        },
+      ],
+      { getUser: () => null }
+    )
+
+    vi.doUnmock('react-router-dom')
+
+    const action = capturedRoutes?.[0]?.children?.[0]?.action
+    expect(action).toBeTypeOf('function')
+    if (typeof action !== 'function') throw new Error('Expected action to be function')
+
+    const result = await action({
+      request: new Request('https://example.test/private', { method: 'POST' }),
+      params: {},
+      context: undefined,
+    } as ActionFunctionArgs)
+
+    expect(childActionCalls).toBe(0)
     expect(result instanceof Response).toBe(true)
     if (!(result instanceof Response)) throw new Error('Expected Response')
     expect(result.status).toBe(302)
