@@ -19,12 +19,22 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(packageRoot, 'src/index.ts'),
+      entry: {
+        index: resolve(packageRoot, 'src/index.ts'),
+        testing: resolve(packageRoot, 'src/testing.ts'),
+      },
       formats: ['es', 'cjs'],
-      fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
+      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'js' : 'cjs'}`,
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react-router-dom', '@react-protected/core', '@react-protected/react'],
+      external: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        '@react-protected/core',
+        '@react-protected/react',
+        '@react-protected/react/testing',
+      ],
     },
   },
 })
