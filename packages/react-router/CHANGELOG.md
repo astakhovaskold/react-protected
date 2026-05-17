@@ -1,5 +1,11 @@
 # @react-protected/react-router
 
+## 0.2.0-beta.3
+
+### Patch Changes
+
+- 9054621: Add testing
+
 ## 0.2.0-beta.2
 
 ### Minor Changes
