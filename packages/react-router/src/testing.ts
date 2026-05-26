@@ -1,2 +1,14 @@
-export type { MockAccessProviderProps } from '@react-protected/react/testing'
-export { MockAccessProvider } from '@react-protected/react/testing'
+import {
+  MockAccessProvider as ReactMockAccessProvider,
+  type MockAccessProviderProps as ReactMockAccessProviderProps,
+} from '@react-protected/react/testing'
+
+/**
+ * Props accepted by the React Router testing helper.
+ */
+export type MockAccessProviderProps<TUser = unknown> = ReactMockAccessProviderProps<TUser>
+
+/**
+ * Test helper that provides a predictable access context.
+ */
+export const MockAccessProvider: typeof ReactMockAccessProvider = ReactMockAccessProvider
