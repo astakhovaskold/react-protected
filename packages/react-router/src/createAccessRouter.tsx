@@ -139,6 +139,15 @@ function wrapLazyRoute<TUser>(
   }
 }
 
+/**
+ * Creates a browser router with access checks applied to protected routes.
+ *
+ * @typeParam TUser - User shape returned by `getUser`.
+ * @param routes - Route objects extended with access protection fields.
+ * @param options - Guard callbacks and navigation settings used by protected routes.
+ * @param routerOptions - Extra options forwarded to `createBrowserRouter`.
+ * @returns A React Router browser router with protected UI, loaders, actions, and lazy routes.
+ */
 export function createAccessRouter<TUser = unknown>(
   routes: Array<ProtectedRouteObject<TUser>>,
   options: CreateAccessRouterConfig<TUser>,

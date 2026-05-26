@@ -5,6 +5,13 @@ import type { AccessContextValue, AccessProviderProps } from './types'
 
 const AccessContext = createContext<AccessContextValue | null>(null)
 
+/**
+ * Provides access control configuration to the React subtree.
+ *
+ * @typeParam TUser - User shape returned by `getUser`.
+ * @param props - Guard callbacks, navigation settings, and descendant elements.
+ * @returns A context provider that enables access-aware hooks and components.
+ */
 export function AccessProvider<TUser = unknown>({
   children,
   loginPath = '/login',
@@ -41,6 +48,13 @@ export function AccessProvider<TUser = unknown>({
   )
 }
 
+/**
+ * Returns the active access context from `AccessProvider`.
+ *
+ * @typeParam TUser - User shape stored in the access context.
+ * @returns The guard instance and navigation settings for the current subtree.
+ * @throws {Error} When called outside an `AccessProvider`.
+ */
 export function useAccess<TUser = unknown>(): AccessContextValue<TUser> {
   const ctx = useContext(AccessContext)
 
