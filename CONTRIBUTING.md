@@ -45,6 +45,14 @@ pnpm changeset
 
 Commit the generated file from `.changeset/` with your PR.
 
+When maintainers run:
+
+```bash
+pnpm version-packages
+```
+
+Changesets bumps package versions and updates the package changelogs in `packages/*/CHANGELOG.md`. The same command is executed by the release workflow on `main`.
+
 ## Pull Requests
 
 - Keep PRs focused and easy to review.

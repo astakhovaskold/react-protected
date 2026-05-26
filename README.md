@@ -217,6 +217,16 @@ If you want to contribute:
 - run `pnpm changeset` when your PR changes a published package
 - run `pnpm lint`, `pnpm typecheck` and `pnpm test` before submitting changes
 
+## Changelog And Releases
+
+Releases are managed with Changesets.
+
+- add a changeset with `pnpm changeset` whenever a PR changes a published package
+- `pnpm version-packages` generates or updates `packages/*/CHANGELOG.md` and bumps package versions
+- pushing to `main` triggers [`.github/workflows/release.yml`](./.github/workflows/release.yml), which opens the release PR and publishes to npm
+
+The repository-level overview lives in [CHANGELOG.md](./CHANGELOG.md).
+
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full workflow.
 
 ## License
