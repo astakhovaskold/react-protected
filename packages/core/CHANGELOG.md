@@ -1,5 +1,11 @@
 # @react-protected/core
 
+## 0.3.0
+
+### Minor Changes
+
+- cb262d3: loader, action and middleware support
+
 ## 0.2.0
 
 ### Minor Changes
