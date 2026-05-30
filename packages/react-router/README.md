@@ -1,113 +1,50 @@
 # @react-protected/react-router
 
-React Router adapter for [react-protected](https://github.com/astakhovaskold/react-protected). Includes `@react-protected/react` — no need to install both.
-
----
-
-## Installation
-
-```bash
-npm install @react-protected/react-router
-```
-
-```bash
-yarn add @react-protected/react-router
-```
-
-```bash
-pnpm add @react-protected/react-router
-```
+React Router helpers for `react-protected`. Includes `@react-protected/react`.
 
 ## Usage
 
-### Data router (recommended)
+### Middleware / loader / action
 
 ```tsx
-import { createAccessRouter } from '@react-protected/react-router'
-import { useAuthStore } from './entities/auth'
+import { createBrowserRouter, redirect } from 'react-router-dom'
+import {
+  createAccessAction,
+  createAccessLoader,
+  createAccessMiddleware,
+} from '@react-protected/react-router'
 
-const router = createAccessRouter(
-  [
-    { path: '/', element: <HomePage /> },
-    { path: '/login', element: <LoginPage />, access: 'guest-only' },
-    { path: '/dashboard', element: <DashboardPage />, access: 'authenticated' },
-    { path: '/admin', element: <AdminPage />, access: 'authenticated', roles: ['admin'] },
-    { path: '/403', element: <Page403 /> },
-  ],
-  {
-    getUser: () => useAuthStore.getState().user,
-    hasRole: (user, roles) => roles.some((role) => user.roles.includes(role)),
-    loginPath: '/login',
-    forbiddenPath: '/403',
-    defaultPath: '/dashboard',
-  }
-)
+const accessOptions = {
+  getUser: () => authStore.getState().user,
+  hasRole: (user, roles) => roles.some((role) => user.roles.includes(role)),
+  hasPermission: (user, permissions) =>
+    permissions.every((permission) => user.permissions.includes(permission)),
+  onDenied: ({ result }) => {
+    switch (result.reason) {
+      case 'unauthenticated':
+        return redirect('/login')
+      case 'authenticated':
+        return redirect('/dashboard')
+      case 'forbidden':
+        return redirect('/403')
+    }
+  },
+}
 
-// App.tsx
-import { RouterProvider } from 'react-router-dom'
-export const App = () => <RouterProvider router={router} />
+const accessMiddleware = createAccessMiddleware(accessOptions)
+const accessLoader = createAccessLoader(accessOptions)
+const accessAction = createAccessAction(accessOptions)
 ```
 
-### JSX routes
+### `AccessRoute` fallback
 
 ```tsx
-import { Route, Routes } from 'react-router-dom'
-import { AccessProvider, AccessRoute } from '@react-protected/react-router'
-
-const App = () => (
-  <AccessProvider
-    getUser={() => useAuthStore.getState().user}
-    hasRole={(user, roles) => roles.some((role) => user.roles.includes(role))}
-    loginPath="/login"
-    forbiddenPath="/403"
-    defaultPath="/dashboard"
-  >
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route
-        path="/login"
-        element={
-          <AccessRoute access="guest-only">
-            <LoginPage />
-          </AccessRoute>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <AccessRoute access="authenticated">
-            <DashboardPage />
-          </AccessRoute>
-        }
-      />
-    </Routes>
-  </AccessProvider>
-)
+<AccessRoute
+  access="unauthenticated"
+  renderDenied={({ reason }) => <div>{reason}</div>}
+>
+  <LoginPage />
+</AccessRoute>
 ```
 
-### Guarding UI elements
-
-```tsx
-import { HasAccess } from '@react-protected/react-router'
-
-const Toolbar = () => (
-  <nav>
-    <HasAccess roles={['admin']}>
-      <button>Delete</button>
-    </HasAccess>
-  </nav>
-)
-```
-
-## Packages
-
-| Package | Description |
-| --- | --- |
-| `@react-protected/core` | Pure access-control logic — no React, no router |
-| `@react-protected/react` | React context, hooks, and `HasAccess` component |
-| `@react-protected/react-router` | This package — adapter for React Router |
-
-## Documentation
-
-- [React Router API](https://github.com/astakhovaskold/react-protected/blob/main/docs/en/api/react-router.md)
-- [Examples](https://github.com/astakhovaskold/react-protected/blob/main/docs/en/README.md)
+The router package decides whether access is allowed and why it was denied. Redirect policy belongs to the application through `onDenied` or `renderDenied`.

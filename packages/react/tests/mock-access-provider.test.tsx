@@ -31,6 +31,7 @@ describe('MockAccessProvider — defaults', () => {
     const { result } = renderHook(
       () => ({
         auth: useHasAccess({ access: 'authenticated' }),
+        unauth: useHasAccess({ access: 'unauthenticated' }),
         role: useHasAccess({ roles: ['admin'] }),
         perm: useHasAccess({ permissions: ['reports:write'] }),
       }),
@@ -42,34 +43,17 @@ describe('MockAccessProvider — defaults', () => {
     )
 
     expect(result.current.auth).toBe(false)
+    expect(result.current.unauth).toBe(true)
     expect(result.current.role).toBe(false)
     expect(result.current.perm).toBe(false)
   })
-
-  it('uses default navigation paths', () => {
+  
+  it('provides a guard through useAccess()', () => {
     const { result } = renderHook(() => useAccess(), {
       wrapper: ({ children }) => <MockAccessProvider>{children}</MockAccessProvider>,
     })
 
-    expect(result.current.loginPath).toBe('/login')
-    expect(result.current.forbiddenPath).toBe('/403')
-    expect(result.current.defaultPath).toBe('/')
-  })
-})
-
-describe('MockAccessProvider — navigation config', () => {
-  it('forwards custom navigation paths', () => {
-    const { result } = renderHook(() => useAccess(), {
-      wrapper: ({ children }) => (
-        <MockAccessProvider loginPath="/auth" forbiddenPath="/no-access" defaultPath="/home">
-          {children}
-        </MockAccessProvider>
-      ),
-    })
-
-    expect(result.current.loginPath).toBe('/auth')
-    expect(result.current.forbiddenPath).toBe('/no-access')
-    expect(result.current.defaultPath).toBe('/home')
+    expect(result.current.guard.check({ access: 'authenticated' })).toEqual({ allowed: true })
   })
 })
 
@@ -145,11 +129,11 @@ describe('MockAccessProvider — custom guard overrides', () => {
   })
 
   it('uses custom isAuthenticated when provided', () => {
-    const { result } = renderHook(() => useHasAccess({ access: 'authenticated' }), {
+    const { result } = renderHook(() => useHasAccess({ access: 'unauthenticated' }), {
       wrapper: ({ children }) => (
         <MockAccessProvider
-          user={null}
-          isAuthenticated={() => false}
+          user={{ id: 1, roles: [], authorities: [] }}
+          isAuthenticated={() => true}
         >
           {children}
         </MockAccessProvider>

@@ -14,11 +14,6 @@ const AccessContext = createContext<AccessContextValue | null>(null)
  */
 export function AccessProvider<TUser = unknown>({
   children,
-  loginPath = '/login',
-  forbiddenPath = '/403',
-  defaultPath = '/',
-  callbackUrlParam,
-  shouldAddCallbackUrl,
   getUser,
   isAuthenticated,
   hasRole,
@@ -32,13 +27,8 @@ export function AccessProvider<TUser = unknown>({
   const value = useMemo<AccessContextValue>(
     () => ({
       guard: guard as AccessContextValue['guard'],
-      loginPath,
-      forbiddenPath,
-      defaultPath,
-      callbackUrlParam,
-      shouldAddCallbackUrl,
     }),
-    [guard, loginPath, forbiddenPath, defaultPath, callbackUrlParam, shouldAddCallbackUrl]
+    [guard]
   )
 
   return (
@@ -52,7 +42,7 @@ export function AccessProvider<TUser = unknown>({
  * Returns the active access context from `AccessProvider`.
  *
  * @typeParam TUser - User shape stored in the access context.
- * @returns The guard instance and navigation settings for the current subtree.
+ * @returns The guard instance for the current subtree.
  * @throws {Error} When called outside an `AccessProvider`.
  */
 export function useAccess<TUser = unknown>(): AccessContextValue<TUser> {

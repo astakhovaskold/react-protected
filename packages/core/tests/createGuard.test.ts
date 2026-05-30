@@ -29,6 +29,19 @@ describe('createGuard', () => {
     })
   })
 
+  it('returns authenticated for unauthenticated-only route when user exists', () => {
+    const guard = makeGuard({ roles: ['viewer'] })
+    expect(guard.check({ access: 'unauthenticated' })).toEqual({
+      allowed: false,
+      reason: 'authenticated',
+    })
+  })
+
+  it('allows unauthenticated-only route when no user exists', () => {
+    const guard = makeGuard(null)
+    expect(guard.check({ access: 'unauthenticated' })).toEqual({ allowed: true })
+  })
+
   it('allows user with correct role', () => {
     const guard = makeGuard({ roles: ['admin'] })
     expect(guard.check({ access: 'authenticated', roles: ['admin'] })).toEqual({

@@ -1,18 +1,20 @@
 {
   "name": "react-protected",
-  "version": "0.0.1-beta.2",
+  "version": "0.3.0",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@9.7.1",
   "scripts": {
     "build": "pnpm -r build",
+    "build:playground": "pnpm --filter @react-protected/playground build",
     "changeset": "changeset",
+    "dev:playground": "pnpm --filter @react-protected/playground dev",
     "version-packages": "changeset version",
     "release": "changeset publish",
     "test": "pnpm -r test",
     "typecheck": "tsc --noEmit -p tsconfig.eslint.json",
-    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint \"packages/*/src/**/*.{ts,tsx}\" \"packages/*/tests/**/*.{ts,tsx}\" \"packages/*/vite.config.ts\"",
-    "lint:fix": "ESLINT_USE_FLAT_CONFIG=true eslint \"packages/*/src/**/*.{ts,tsx}\" \"packages/*/tests/**/*.{ts,tsx}\" \"packages/*/vite.config.ts\" --fix",
+    "lint": "ESLINT_USE_FLAT_CONFIG=true eslint --no-error-on-unmatched-pattern \"packages/*/src/**/*.{ts,tsx}\" \"packages/*/tests/**/*.{ts,tsx}\" \"packages/*/vite.config.ts\" \"apps/*/src/**/*.{ts,tsx}\" \"apps/*/vite.config.ts\"",
+    "lint:fix": "ESLINT_USE_FLAT_CONFIG=true eslint --no-error-on-unmatched-pattern \"packages/*/src/**/*.{ts,tsx}\" \"packages/*/tests/**/*.{ts,tsx}\" \"packages/*/vite.config.ts\" \"apps/*/src/**/*.{ts,tsx}\" \"apps/*/vite.config.ts\" --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },

@@ -30,4 +30,9 @@ export default defineConfig({
       external: ['react', 'react-dom', '@react-protected/core'],
     },
   },
+  test: {
+    alias: {
+      '@react-protected/core': resolve(packageRoot, '../core/src/index.ts'),
+    },
+  },
 })

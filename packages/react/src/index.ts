@@ -4,6 +4,5 @@ export type {
   AccessContextValue,
   AccessProviderProps,
   AccessRouteProps,
-  NavigationConfig,
   RouteProtection,
 } from './types'
