@@ -1,5 +1,17 @@
 # @react-protected/react-router
 
+## 0.3.0
+
+### Minor Changes
+
+- cb262d3: loader, action and middleware support
+
+### Patch Changes
+
+- Updated dependencies [cb262d3]
+  - @react-protected/core@0.3.0
+  - @react-protected/react@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

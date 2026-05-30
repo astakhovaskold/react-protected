@@ -1,6 +1,6 @@
 {
   "name": "@react-protected/react-router",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "description": "React Router data router adapter for react-protected",
   "main": "./dist/index.cjs",
