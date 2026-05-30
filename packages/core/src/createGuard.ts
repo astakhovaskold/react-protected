@@ -26,6 +26,12 @@ export function createGuard<TUser = unknown>(options: GuardOptions<TUser>): Guar
       Boolean(config.roles?.length) ||
       Boolean(config.permissions?.length)
 
+    if (access === 'unauthenticated') {
+      return authenticated
+        ? { allowed: false, reason: 'authenticated' }
+        : { allowed: true }
+    }
+
     if (requiresAuth && !authenticated) {
       return { allowed: false, reason: 'unauthenticated' }
     }

@@ -37,4 +37,11 @@ export default defineConfig({
       ],
     },
   },
+  test: {
+    alias: {
+      '@react-protected/core': resolve(packageRoot, '../core/src/index.ts'),
+      '@react-protected/react': resolve(packageRoot, '../react/src/index.ts'),
+      '@react-protected/react/testing': resolve(packageRoot, '../react/src/testing.tsx'),
+    },
+  },
 })

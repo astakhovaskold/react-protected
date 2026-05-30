@@ -35,17 +35,31 @@ describe('package build', () => {
       logLevel: 'silent',
     })
 
-    const [accessRouteDeclarations, createAccessRouterDeclarations, testingDeclarations] = await Promise.all([
+    const [
+      accessRouteDeclarations,
+      createAccessActionDeclarations,
+      createAccessLoaderDeclarations,
+      createAccessMiddlewareDeclarations,
+      testingDeclarations,
+    ] = await Promise.all([
       readFile(join(distDir, 'AccessRoute.d.ts'), 'utf8'),
-      readFile(join(distDir, 'createAccessRouter.d.ts'), 'utf8'),
+      readFile(join(distDir, 'createAccessAction.d.ts'), 'utf8'),
+      readFile(join(distDir, 'createAccessLoader.d.ts'), 'utf8'),
+      readFile(join(distDir, 'createAccessMiddleware.d.ts'), 'utf8'),
       readFile(join(distDir, 'testing.d.ts'), 'utf8'),
     ])
 
     expect(accessRouteDeclarations).toContain(
-      'Protects a route element and redirects when access is denied.'
+      'Protects a route element and renders a denied fallback when access is denied.'
     )
-    expect(createAccessRouterDeclarations).toContain(
-      'Creates a browser router with access checks applied to protected routes.'
+    expect(createAccessActionDeclarations).toContain(
+      'Creates a guarded React Router action.'
+    )
+    expect(createAccessLoaderDeclarations).toContain(
+      'Creates a guarded React Router loader.'
+    )
+    expect(createAccessMiddlewareDeclarations).toContain(
+      'Creates a React Router middleware factory for guarded routes.'
     )
     expect(testingDeclarations).toContain('Test helper that provides a predictable access context.')
   })

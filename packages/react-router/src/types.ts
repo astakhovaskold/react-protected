@@ -1,22 +1,17 @@
-import type { AccessLevel, GuardOptions } from '@react-protected/core'
-import type { NavigationConfig, RouteProtection } from '@react-protected/react'
+import type { AccessLevel, AccessResult, GuardOptions } from '@react-protected/core'
+import type { RouteProtection } from '@react-protected/react'
 import type { ReactNode } from 'react'
-import type { createBrowserRouter, RouteObject } from 'react-router-dom'
+import type { Params } from 'react-router-dom'
 
 /**
  * Access level supported by the React Router adapter.
  */
-export type RouterAccessLevel = AccessLevel | 'guest-only'
+export type RouterAccessLevel = AccessLevel
 
 /**
  * Route protection config accepted by router-aware APIs.
  */
-export type RouterRouteConfig = Omit<RouteProtection, 'access'> & {
-  /**
-   * Access level for the route, including support for guest-only screens.
-   */
-  access?: RouterAccessLevel
-}
+export type RouterRouteConfig = RouteProtection
 
 /**
  * Props accepted by `AccessRoute`.
@@ -26,25 +21,45 @@ export type AccessRouteProps = RouterRouteConfig & {
    * Route element rendered when access is allowed.
    */
   children?: ReactNode
+  /**
+   * Rendered when access is denied.
+   */
+  renderDenied?: (result: Extract<AccessResult, { allowed: false }>) => ReactNode
 }
 
 /**
- * React Router route object extended with access protection fields.
+ * Arguments passed to an `onDenied` callback.
  */
-export type ProtectedRouteObject<TUser = unknown> = Omit<RouteObject, 'children'> &
-  RouterRouteConfig & {
+export type AccessDeniedArgs<TContext = unknown> = {
+  /**
+   * Access result that caused the denial.
+   */
+  result: Extract<AccessResult, { allowed: false }>
+  /**
+   * Original request handled by the route helper.
+   */
+  request: Request
+  /**
+   * Route params from the matched route.
+   */
+  params: Params<string>
+  /**
+   * Route context received from React Router.
+   */
+  context: TContext
+  /**
+   * Route config evaluated for this access check.
+   */
+  config: RouterRouteConfig
+}
+
+/**
+ * Guard callbacks and denied handling accepted by middleware/loader/action helpers.
+ */
+export type CreateAccessHelpersConfig<TUser = unknown, TContext = unknown, TResult = unknown> =
+  GuardOptions<TUser> & {
     /**
-     * Nested child routes that inherit parent guard behavior.
+     * Called when access is denied.
      */
-    children?: Array<ProtectedRouteObject<TUser>>
+    onDenied: (args: AccessDeniedArgs<TContext>) => TResult
   }
-
-/**
- * Additional options forwarded to `createBrowserRouter`.
- */
-export type CreateAccessRouterOptions = Parameters<typeof createBrowserRouter>[1]
-
-/**
- * Guard callbacks and navigation settings accepted by `createAccessRouter`.
- */
-export type CreateAccessRouterConfig<TUser = unknown> = GuardOptions<TUser> & NavigationConfig

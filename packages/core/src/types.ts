@@ -1,14 +1,15 @@
 /**
  * Access level handled by the framework-agnostic guard.
  */
-export type AccessLevel = 'public' | 'authenticated'
+export type AccessLevel = 'public' | 'authenticated' | 'unauthenticated'
 
 /**
  * Access requirements consumed by `guard.check()` and adapter components.
  */
 export type AccessConfig = {
   /**
-   * Declares whether access is public or requires an authenticated user.
+   * Declares whether access is public, requires an authenticated user, or requires
+   * an unauthenticated user.
    * Defaults to `'public'` when omitted.
    */
   access?: AccessLevel
@@ -32,6 +33,7 @@ export type AccessConfig = {
 export type AccessResult =
   | { allowed: true }
   | { allowed: false; reason: 'unauthenticated' }
+  | { allowed: false; reason: 'authenticated' }
   | { allowed: false; reason: 'forbidden' }
 
 /**

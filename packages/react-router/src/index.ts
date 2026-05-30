@@ -1,17 +1,17 @@
 export { AccessRoute, useRouteAccess } from './AccessRoute'
-export { createAccessRouter } from './createAccessRouter'
+export { createAccessAction } from './createAccessAction'
+export { createAccessLoader } from './createAccessLoader'
+export { createAccessMiddleware } from './createAccessMiddleware'
 export type {
+  AccessDeniedArgs,
   AccessRouteProps,
-  CreateAccessRouterConfig,
-  CreateAccessRouterOptions,
-  ProtectedRouteObject,
+  CreateAccessHelpersConfig,
   RouterAccessLevel,
   RouterRouteConfig,
 } from './types'
 export type {
   AccessContextValue,
   AccessProviderProps,
-  NavigationConfig,
   RouteProtection,
 } from '@react-protected/react'
 export {

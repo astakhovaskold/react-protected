@@ -23,7 +23,7 @@ const compat = new FlatCompat({
 const commonFiles = ['**/*.{js,cjs,mjs,ts,tsx}']
 const tsFiles = ['**/*.{ts,tsx}']
 const testFiles = ['**/tests/**/*.{ts,tsx}', '**/*.{test,spec}.{ts,tsx}']
-const configFiles = ['eslint.config.mjs', 'packages/*/vite.config.ts']
+const configFiles = ['eslint.config.mjs', 'packages/*/vite.config.ts', 'apps/*/vite.config.ts']
 
 export default [
   {
@@ -82,6 +82,7 @@ export default [
             '**/*.{test,spec}.{ts,tsx}',
             'eslint.config.mjs',
             'packages/*/vite.config.ts',
+            'apps/*/vite.config.ts',
           ],
         },
       ],
